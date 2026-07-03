@@ -382,6 +382,22 @@ export default function OrcamentoPrintPage() {
         </div>
       </div>
 
+      {/* Debug Block Temporário */}
+      <div className="print:hidden mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-xs overflow-auto max-h-40">
+        <p className="font-bold text-red-800 mb-2">RAIO-X DE DADOS (Invisível na impressão):</p>
+        {itens.map((it: any) => {
+          const s = it.especificacao_tecnica || it.specs || {};
+          return (
+            <div key={it.id} className="mb-2">
+              <span className="font-semibold">{it.descricao}:</span> 
+              {Object.keys(s).length > 0 
+                ? <span className="text-green-600 ml-2">✅ JSONB Recebido (Kit: {s.grupo_kit || 'N/A'})</span>
+                : <span className="text-red-500 ml-2">❌ JSONB Vazio ou não buscado do banco</span>}
+            </div>
+          );
+        })}
+      </div>
+
       {/* ── Dados do Cliente ───────────────────────────────────── */}
       <div className="p-4 border border-black rounded-lg mb-4">
         <div className="flex flex-col sm:flex-row justify-between gap-4">
