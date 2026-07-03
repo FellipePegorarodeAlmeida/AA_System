@@ -309,8 +309,8 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
     const newItems = itemsToDuplicate.map((item) => {
       maxOrdemProposta++;
       nextOrdem++;
-      // Remove IDs antigos e timestamps para o banco gerar novos limpos
-      const { id, created_at, updated_at, ...rest } = item;
+      // Remove IDs antigos e timestamps para o banco gerar novos limpos, e também sujeiras antigas
+      const { id, created_at, updated_at, grupo_kit, tipo_variacao_opcoes, ...rest } = item as any;
       return {
         ...rest,
         id: crypto.randomUUID(),
@@ -714,8 +714,8 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                           <div className="flex-1 min-w-[250px]">
                             <Label className="text-muted-foreground mb-1 block">Agrupar no Kit / Coleção (Deixe vazio para item avulso)</Label>
                             <Input 
-                              value={p.specs.grupo_kit || ""} 
-                              onChange={(e) => updateSharedSpec(p.cenario_id, 'grupo_kit', e.target.value)} 
+                              value={p.specs.especificacao_tecnica?.grupo_kit || ""} 
+                              onChange={(e) => updateSharedSpec(p.cenario_id, 'especificacao_tecnica', { ...(p.specs.especificacao_tecnica || {}), grupo_kit: e.target.value })} 
                               placeholder="Ex: Box Saga Completa" 
                               className="w-full bg-card" 
                               disabled={isLocked} 
@@ -724,8 +724,8 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                           <div className="flex-1 min-w-[280px]">
                             <Label className="text-muted-foreground mb-1 block">Comportamento das Opções de Quantidade</Label>
                             <Select 
-                              value={p.specs.tipo_variacao_opcoes || "quantidade"} 
-                              onValueChange={(val) => updateSharedSpec(p.cenario_id, 'tipo_variacao_opcoes', val)} 
+                              value={p.specs.especificacao_tecnica?.tipo_variacao_opcoes || "quantidade"} 
+                              onValueChange={(val) => updateSharedSpec(p.cenario_id, 'especificacao_tecnica', { ...(p.specs.especificacao_tecnica || {}), tipo_variacao_opcoes: val })} 
                               disabled={isLocked}
                             >
                               <SelectTrigger className="w-full bg-card">
