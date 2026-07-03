@@ -57,103 +57,15 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
 
   return (
     <div className="mt-4 p-4 border rounded-md bg-muted/20 col-span-5">
-      <h3 className="text-sm font-semibold mb-3">Especificações Editoriais</h3>
-      
-      {/* Topo do Painel: Tipo de Produto / Encadernação */}
-      <div className="flex flex-wrap items-end gap-3 mb-6 p-4 bg-blue-50/50 border border-blue-100 rounded-lg">
-        <div className="space-y-1.5 flex flex-col">
-          <Label className="text-xs font-bold text-blue-900">Tipo de Encadernação</Label>
-          <Select disabled={disabled} value={value.tipo_encadernacao || "none"} onValueChange={(val) => updateGeral("tipo_encadernacao", val === "none" ? "" : val)}>
-            <SelectTrigger className="h-8 bg-white border-blue-200 text-sm w-[250px]">
-              <SelectValue placeholder="Selecione..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Selecione...</SelectItem>
-              <SelectItem value="Grampo">Grampo</SelectItem>
-              <SelectItem value="Grampo Omega (2)">Grampo Omega (2)</SelectItem>
-              <SelectItem value="Grampo Omega (4)">Grampo Omega (4)</SelectItem>
-              <SelectItem value="Brochura colada s/ orelha">Brochura colada s/ orelha</SelectItem>
-              <SelectItem value="Brochura colada c/ orelha">Brochura colada c/ orelha</SelectItem>
-              <SelectItem value="Brochura Costurada s/ orelha">Brochura Costurada s/ orelha</SelectItem>
-              <SelectItem value="Brochura Costurada c/ orelha">Brochura Costurada c/ orelha</SelectItem>
-              <SelectItem value="Capa Flexível s/ orelha">Capa Flexível s/ orelha</SelectItem>
-              <SelectItem value="Capa Flexível c/ orelha">Capa Flexível c/ orelha</SelectItem>
-              <SelectItem value="Capa Dura">Capa Dura</SelectItem>
-              <SelectItem value="Espiral">Espiral</SelectItem>
-              <SelectItem value="Wire-O">Wire-O</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Condicionais Inline */}
-        {value.tipo_encadernacao?.includes("c/ orelha") && (
-          <div className="space-y-1.5 flex flex-col">
-            <Label className="text-xs">Medida da Orelha</Label>
-            <Input
-              disabled={disabled}
-              className="h-8 bg-white text-sm w-[150px]"
-              placeholder="Ex: 8cm"
-              value={value.medida_orelha || ""}
-              onChange={(e) => updateGeral("medida_orelha", e.target.value)}
-            />
-          </div>
-        )}
-
-        {value.tipo_encadernacao === "Capa Dura" && (
-          <div className="space-y-1.5 flex flex-col">
-            <Label className="text-xs">Espessura do Papelão</Label>
-            <Input
-              disabled={disabled}
-              className="h-8 bg-white text-sm w-[150px]"
-              placeholder="Ex: 2mm"
-              value={value.espessura_papelao || ""}
-              onChange={(e) => updateGeral("espessura_papelao", e.target.value)}
-            />
-          </div>
-        )}
-
-        {(value.tipo_encadernacao === "Espiral" || value.tipo_encadernacao === "Wire-O") && (
-          <>
-            <div className="space-y-1.5 flex flex-col">
-              <Label className="text-xs">Posição</Label>
-              <Select disabled={disabled} value={value.posicao_garra || "Lateral"} onValueChange={(val) => updateGeral("posicao_garra", val)}>
-                <SelectTrigger className="h-8 bg-white text-sm w-[120px]">
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Lateral">Lateral</SelectItem>
-                  <SelectItem value="Cabeça">Cabeça</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {value.tipo_encadernacao === "Espiral" && (
-              <div className="space-y-1.5 flex flex-col">
-                <Label className="text-xs">Material</Label>
-                <Select disabled={disabled} value={value.material_espiral || "Plástico"} onValueChange={(val) => updateGeral("material_espiral", val)}>
-                  <SelectTrigger className="h-8 bg-white text-sm w-[120px]">
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Plástico">Plástico</SelectItem>
-                    <SelectItem value="Metálico">Metálico</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            <div className="space-y-1.5 flex flex-col">
-              <Label className="text-xs">Cor da Garra</Label>
-              <Input
-                disabled={disabled}
-                className="h-8 bg-white text-sm w-[120px]"
-                placeholder="Ex: Preto"
-                value={value.cor_garra || ""}
-                onChange={(e) => updateGeral("cor_garra", e.target.value)}
-              />
-            </div>
-          </>
-        )}
+      <div className="flex items-center gap-4 mb-4">
+        <h3 className="text-sm font-bold text-foreground">Especificações Editoriais</h3>
+        <Input 
+          className="w-[200px] h-8" 
+          placeholder="Tipo de Obra (Ex: Livro, Revista)" 
+          value={value.tipo_obra || ""} 
+          onChange={(e) => updateGeral("tipo_obra", e.target.value)} 
+          disabled={disabled} 
+        />
       </div>
 
       <Tabs defaultValue="capa" className="w-full">
@@ -174,17 +86,17 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
             value="logistica"
             className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none shadow-none bg-transparent"
           >
-            Manuseio e Logística
+            Finalização e Logística
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="capa" className="pt-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             
-            {/* Papel */}
+            {/* Papel e Capa Dura */}
             <div className="space-y-1.5 flex flex-col col-span-full md:col-span-1">
               <Label className="text-xs">Papel</Label>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-4">
                 <Select disabled={disabled} value={capa.papel || "none"} onValueChange={(val) => updateCapa("papel", val === "none" ? "" : val)}>
                   <SelectTrigger className="h-8 bg-card text-sm w-[200px]">
                     <SelectValue placeholder="Selecione..." />
@@ -207,6 +119,26 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
                     placeholder="Qual papel?"
                     value={capa.papel_especial || ""}
                     onChange={(e) => updateCapa("papel_especial", e.target.value)}
+                  />
+                )}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="capa_dura"
+                    disabled={disabled}
+                    checked={!!capa.capa_dura}
+                    onCheckedChange={(checked) => updateCapa("capa_dura", checked)}
+                  />
+                  <Label htmlFor="capa_dura" className="text-xs font-medium leading-none cursor-pointer">
+                    Capa Dura?
+                  </Label>
+                </div>
+                {capa.capa_dura && (
+                  <Input
+                    disabled={disabled}
+                    className="h-8 bg-card text-sm w-[120px]"
+                    placeholder="Espessura Papelão"
+                    value={capa.espessura_papelao || ""}
+                    onChange={(e) => updateCapa("espessura_papelao", e.target.value)}
                   />
                 )}
               </div>
@@ -267,57 +199,58 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
               </div>
             </div>
 
-            {/* Acabamento 1 */}
-            <div className="space-y-1.5 col-span-full">
-              <Label className="text-xs">Acabamento 1</Label>
-              <Select disabled={disabled} value={capa.acabamento1 || "Nenhum"} onValueChange={(val) => updateCapa("acabamento1", val)}>
-                <SelectTrigger className="h-8 bg-card text-sm w-[250px]">
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Nenhum">Nenhum</SelectItem>
-                  <SelectItem value="Laminação BOPP Fosca">Laminação BOPP Fosca</SelectItem>
-                  <SelectItem value="Laminação BOPP Brilho">Laminação BOPP Brilho</SelectItem>
-                  <SelectItem value="Laminação BOPP Soft Touch">Laminação BOPP Soft Touch</SelectItem>
-                  <SelectItem value="Laminação Holográfica">Laminação Holográfica</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Acabamento 2 */}
-            <div className="space-y-1.5 col-span-full">
-              <Label className="text-xs">Acabamento 2</Label>
-              <div className="flex flex-wrap items-center gap-2">
-                <Select disabled={disabled} value={capa.acabamento2 || "Nenhum"} onValueChange={(val) => updateCapa("acabamento2", val)}>
+            {/* Acabamentos 1 e 2 (Mesma linha) */}
+            <div className="col-span-full flex flex-wrap items-end gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Acabamento 1</Label>
+                <Select disabled={disabled} value={capa.acabamento1 || "Nenhum"} onValueChange={(val) => updateCapa("acabamento1", val)}>
                   <SelectTrigger className="h-8 bg-card text-sm w-[250px]">
                     <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Nenhum">Nenhum</SelectItem>
-                    <SelectItem value="Verniz UV Reserva (High gloss)">Verniz UV Reserva (High gloss)</SelectItem>
-                    <SelectItem value="Hotstamping">Hotstamping</SelectItem>
-                    <SelectItem value="Relevo">Relevo</SelectItem>
-                    <SelectItem value="High Print">High Print</SelectItem>
+                    <SelectItem value="Laminação BOPP Fosca">Laminação BOPP Fosca</SelectItem>
+                    <SelectItem value="Laminação BOPP Brilho">Laminação BOPP Brilho</SelectItem>
+                    <SelectItem value="Laminação BOPP Soft Touch">Laminação BOPP Soft Touch</SelectItem>
+                    <SelectItem value="Laminação Holográfica">Laminação Holográfica</SelectItem>
                   </SelectContent>
                 </Select>
-                {capa.acabamento2 === "Hotstamping" && (
-                  <>
-                    <Input
-                      disabled={disabled}
-                      className="h-8 bg-card text-sm w-[120px]"
-                      placeholder="Cor"
-                      value={capa.hotstamping2_cor || ""}
-                      onChange={(e) => updateCapa("hotstamping2_cor", e.target.value)}
-                    />
-                    <Input
-                      disabled={disabled}
-                      className="h-8 bg-card text-sm w-[120px]"
-                      placeholder="Medida (ex: 5x5cm)"
-                      value={capa.hotstamping2_medida || ""}
-                      onChange={(e) => updateCapa("hotstamping2_medida", e.target.value)}
-                    />
-                  </>
-                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Acabamento 2</Label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select disabled={disabled} value={capa.acabamento2 || "Nenhum"} onValueChange={(val) => updateCapa("acabamento2", val)}>
+                    <SelectTrigger className="h-8 bg-card text-sm w-[250px]">
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Nenhum">Nenhum</SelectItem>
+                      <SelectItem value="Verniz UV Reserva (High gloss)">Verniz UV Reserva (High gloss)</SelectItem>
+                      <SelectItem value="Hotstamping">Hotstamping</SelectItem>
+                      <SelectItem value="Relevo">Relevo</SelectItem>
+                      <SelectItem value="High Print">High Print</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {capa.acabamento2 === "Hotstamping" && (
+                    <>
+                      <Input
+                        disabled={disabled}
+                        className="h-8 bg-card text-sm w-[120px]"
+                        placeholder="Cor"
+                        value={capa.hotstamping2_cor || ""}
+                        onChange={(e) => updateCapa("hotstamping2_cor", e.target.value)}
+                      />
+                      <Input
+                        disabled={disabled}
+                        className="h-8 bg-card text-sm w-[120px]"
+                        placeholder="Medida (ex: 5x5cm)"
+                        value={capa.hotstamping2_medida || ""}
+                        onChange={(e) => updateCapa("hotstamping2_medida", e.target.value)}
+                      />
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -567,6 +500,66 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
         <TabsContent value="logistica" className="pt-4">
           <div className="flex flex-col gap-4">
             
+            {/* Nova linha: Regra de Encadernação */}
+            <div className="flex flex-wrap items-end gap-3 mb-2 pb-4 border-b">
+              <div className="space-y-1.5 flex flex-col">
+                <Label className="text-xs">Regra de Encadernação</Label>
+                <Select disabled={disabled} value={value.regra_encadernacao || "none"} onValueChange={(val) => updateGeral("regra_encadernacao", val === "none" ? "" : val)}>
+                  <SelectTrigger className="h-8 bg-card text-sm w-[250px]">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Selecione...</SelectItem>
+                    <SelectItem value="Encadernação Colada PUR">Encadernação Colada PUR</SelectItem>
+                    <SelectItem value="Encadernação Costurada + colada">Encadernação Costurada + colada</SelectItem>
+                    <SelectItem value="Espiral">Espiral</SelectItem>
+                    <SelectItem value="Wire-O">Wire-O</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {value.regra_encadernacao === "Espiral" && (
+                <>
+                  <div className="space-y-1.5 flex flex-col">
+                    <Label className="text-xs">Material</Label>
+                    <Select disabled={disabled} value={value.espiral_material || "none"} onValueChange={(val) => updateGeral("espiral_material", val === "none" ? "" : val)}>
+                      <SelectTrigger className="h-8 bg-card text-sm w-[120px]">
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Selecione...</SelectItem>
+                        <SelectItem value="Plástico">Plástico</SelectItem>
+                        <SelectItem value="Metalizado">Metalizado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5 flex flex-col">
+                    <Label className="text-xs">Cor da Garra</Label>
+                    <Input
+                      disabled={disabled}
+                      className="h-8 bg-card text-sm w-[150px]"
+                      placeholder="Cor da Garra"
+                      value={value.espiral_cor || ""}
+                      onChange={(e) => updateGeral("espiral_cor", e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+
+              {value.regra_encadernacao === "Wire-O" && (
+                <div className="space-y-1.5 flex flex-col">
+                  <Label className="text-xs">Cor do Arame</Label>
+                  <Input
+                    disabled={disabled}
+                    className="h-8 bg-card text-sm w-[150px]"
+                    placeholder="Cor do Arame"
+                    value={value.wireo_cor || ""}
+                    onChange={(e) => updateGeral("wireo_cor", e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+
             {/* Bloco Manuseio */}
             <div className="border rounded-lg p-4 bg-muted/20 space-y-4">
               <h4 className="text-sm font-bold text-foreground">Manuseio</h4>
