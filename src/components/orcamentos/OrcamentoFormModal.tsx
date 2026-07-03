@@ -639,7 +639,9 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                       ))}
                     </TabsList>
                     
-                    {produtos.map((p: any) => (
+                    {produtos.map((p: any) => {
+                      const isEditorial = solucoes.find((s: any) => s.id === p.specs.solucao_id)?.nome === 'Editorial';
+                      return (
                       <TabsContent key={p.cenario_id} value={p.cenario_id} className="m-0 bg-card border border-t-0 p-5 rounded-b-lg shadow-sm space-y-6">
                         
                         {/* 1. TOPO: Especificações do Produto */}
@@ -687,16 +689,23 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                             </div>
                             <div className="col-span-1 grid gap-1.5"><Label className="text-xs">Nº Proposta Forn.</Label><Input className="h-8 bg-card" value={p.specs.fornecedor_numero_proposta || ""} onChange={e => updateSharedSpec(p.cenario_id, "fornecedor_numero_proposta", e.target.value)} disabled={isLocked} placeholder="Ex: 12345" /></div>
                             
-                            <div className="col-span-2 grid gap-1.5"><Label className="text-xs">Dimensões (mm)</Label><div className="flex gap-2"><Input className="h-8 bg-card w-full" placeholder="Largura" value={p.specs.largura_mm || ""} onChange={e => updateSharedSpec(p.cenario_id, "largura_mm", e.target.value)} disabled={isLocked} /><span className="flex items-center text-muted-foreground text-xs">x</span><Input className="h-8 bg-card w-full" placeholder="Altura" value={p.specs.altura_mm || ""} onChange={e => updateSharedSpec(p.cenario_id, "altura_mm", e.target.value)} disabled={isLocked} /></div></div>
-                            <div className="col-span-2 grid gap-1.5"><Label className="text-xs">Substrato</Label><Input className="h-8 bg-card" value={p.specs.substrato || ""} onChange={e => updateSharedSpec(p.cenario_id, "substrato", e.target.value)} disabled={isLocked} /></div>
-                            <div className="col-span-1 grid gap-1.5"><Label className="text-xs">Prazo Estimado</Label><Input className="h-8 bg-card" value={p.specs.prazo_estimado || ""} onChange={e => updateSharedSpec(p.cenario_id, "prazo_estimado", e.target.value)} disabled={isLocked} /></div>
+                            {!isEditorial && (
+                              <>
+                                <div className="col-span-2 grid gap-1.5"><Label className="text-xs">Dimensões (mm)</Label><div className="flex gap-2"><Input className="h-8 bg-card w-full" placeholder="Largura" value={p.specs.largura_mm || ""} onChange={e => updateSharedSpec(p.cenario_id, "largura_mm", e.target.value)} disabled={isLocked} /><span className="flex items-center text-muted-foreground text-xs">x</span><Input className="h-8 bg-card w-full" placeholder="Altura" value={p.specs.altura_mm || ""} onChange={e => updateSharedSpec(p.cenario_id, "altura_mm", e.target.value)} disabled={isLocked} /></div></div>
+                                <div className="col-span-2 grid gap-1.5"><Label className="text-xs">Substrato</Label><Input className="h-8 bg-card" value={p.specs.substrato || ""} onChange={e => updateSharedSpec(p.cenario_id, "substrato", e.target.value)} disabled={isLocked} /></div>
+                                <div className="col-span-1 grid gap-1.5"><Label className="text-xs">Prazo Estimado</Label><Input className="h-8 bg-card" value={p.specs.prazo_estimado || ""} onChange={e => updateSharedSpec(p.cenario_id, "prazo_estimado", e.target.value)} disabled={isLocked} /></div>
+                                
+                                <div className="col-span-5 grid gap-1.5"><Label className="text-xs">Especificação Completa</Label><Textarea className="min-h-[60px] bg-card text-sm" value={p.specs.acabamentos || ""} onChange={e => updateSharedSpec(p.cenario_id, "acabamentos", e.target.value)} disabled={isLocked} /></div>
+                              </>
+                            )}
                             
-                            <div className="col-span-5 grid gap-1.5"><Label className="text-xs">Especificação Completa</Label><Textarea className="min-h-[60px] bg-card text-sm" value={p.specs.acabamentos || ""} onChange={e => updateSharedSpec(p.cenario_id, "acabamentos", e.target.value)} disabled={isLocked} /></div>
-                            <EspecificacaoEditorialPanel
-                              value={p.specs.especificacao_tecnica || {}}
-                              onChange={(novoJson) => updateSharedSpec(p.cenario_id, 'especificacao_tecnica', novoJson)}
-                              disabled={isLocked}
-                            />
+                            {isEditorial && (
+                              <EspecificacaoEditorialPanel
+                                value={p.specs.especificacao_tecnica || {}}
+                                onChange={(novoJson) => updateSharedSpec(p.cenario_id, 'especificacao_tecnica', novoJson)}
+                                disabled={isLocked}
+                              />
+                            )}
                           </div>
                         </div>
 
@@ -791,7 +800,7 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                         </div>
 
                       </TabsContent>
-                    ))}
+                    )})}
                   </Tabs>
                 )}
               </TabsContent>
