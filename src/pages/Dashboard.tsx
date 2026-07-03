@@ -51,8 +51,8 @@ export default function Dashboard() {
   return (
     <div>
       <PageHeader
-        title="ERP LFA"
-        description="Indicadores do fluxo Orçamento → Pedido → NF → Financeiro."
+        title="AA System"
+        description="Sistema de gestão de Representação Gráfica"
       />
 
       {error && (
