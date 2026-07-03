@@ -709,6 +709,36 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                           </div>
                         </div>
 
+                        {/* Controles Comerciais (Kit/Comportamento) */}
+                        <div className="flex flex-wrap items-center gap-4 mt-6 mb-4 p-4 bg-muted/30 border-t border-b border-dashed">
+                          <div className="flex-1 min-w-[250px]">
+                            <Label className="text-muted-foreground mb-1 block">Agrupar no Kit / Coleção (Deixe vazio para item avulso)</Label>
+                            <Input 
+                              value={p.specs.grupo_kit || ""} 
+                              onChange={(e) => updateSharedSpec(p.cenario_id, 'grupo_kit', e.target.value)} 
+                              placeholder="Ex: Box Saga Completa" 
+                              className="w-full bg-card" 
+                              disabled={isLocked} 
+                            />
+                          </div>
+                          <div className="flex-1 min-w-[280px]">
+                            <Label className="text-muted-foreground mb-1 block">Comportamento das Opções de Quantidade</Label>
+                            <Select 
+                              value={p.specs.tipo_variacao_opcoes || "quantidade"} 
+                              onValueChange={(val) => updateSharedSpec(p.cenario_id, 'tipo_variacao_opcoes', val)} 
+                              disabled={isLocked}
+                            >
+                              <SelectTrigger className="w-full bg-card">
+                                <SelectValue/>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="quantidade">Variação de Quantidade (Escala)</SelectItem>
+                                <SelectItem value="sku">SKUs / Volumes Diferentes</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
                         {/* 2. RODAPÉ: Grade de Modelos/Quantidades */}
                         <div>
                           <div className="flex justify-between items-center mb-3">
