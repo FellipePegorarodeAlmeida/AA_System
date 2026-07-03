@@ -80,28 +80,6 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
-
-      <div className="surface-card mt-6 p-5">
-        <h3 className="font-semibold">Fila de desenvolvimento</h3>
-        <ol className="mt-3 list-inside list-decimal space-y-1.5 text-sm text-muted-foreground">
-          <li>26/05/2026</li>
-          <li>cadastro de cliente dar um nome para cada endereço de entrega escritório, indústria X, filial Y. </li>
-          <li> criar botão para duplicar orçamento</li>
-          <li>
-            Contas a receber:
-            <ul className="ml-6 mt-1 list-disc space-y-1">
-              <li>começar a passar os fios para o módulo de caixa. No momento que a gente da a baixa do recebimento de comissão, sai do contas a receber, e vai para movimentação de caixa;</li>
-              <li>
-                controles de vendedor que eu tinha:
-                <ul className="ml-6 mt-1 list-disc space-y-1">
-                  <li>valor por mês - aqui, diferente entre pedidos abertos, faturamento e recebimento (3 visões);</li>
-                </ul>
-              </li>
-            </ul>
-          </li>
-          <li>Proposta Revenda</li>
-        </ol>
-      </div>
     </div>
   );
 };
