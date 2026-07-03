@@ -29,10 +29,10 @@ export default function LoginPage() {
       if (error) throw error;
       navigate("/");
     } catch (err: any) {
-      toast({ 
-        title: "Erro ao fazer login", 
-        description: err.message, 
-        variant: "destructive" 
+      toast({
+        title: "Erro ao fazer login",
+        description: err.message,
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
@@ -53,16 +53,16 @@ export default function LoginPage() {
         }
       });
       if (error) throw error;
-      toast({ 
-        title: "Link enviado!", 
-        description: "Verifique sua caixa de entrada para acessar o sistema." 
+      toast({
+        title: "Link enviado!",
+        description: "Verifique sua caixa de entrada para acessar o sistema."
       });
       setPassword("");
     } catch (err: any) {
-      toast({ 
-        title: "Erro ao tentar enviar o link", 
-        description: err.message, 
-        variant: "destructive" 
+      toast({
+        title: "Erro ao tentar enviar o link",
+        description: err.message,
+        variant: "destructive"
       });
     } finally {
       setMagicLoading(false);
@@ -76,7 +76,7 @@ export default function LoginPage() {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground mb-2">
             <LogIn className="h-6 w-6" />
           </div>
-          <CardTitle className="text-2xl font-bold tracking-tight">LFA Soluções</CardTitle>
+          <CardTitle className="text-2xl font-bold tracking-tight">AA System</CardTitle>
           <CardDescription className="text-sm">
             Acesso corporativo seguro. Faça login com sua senha.
           </CardDescription>
@@ -100,12 +100,12 @@ export default function LoginPage() {
                 className="h-11"
               />
             </div>
-            
+
             <div className="space-y-3 pt-2">
               <Button type="submit" className="w-full h-11 text-md font-medium" disabled={loading || magicLoading}>
                 {loading ? "Entrando..." : "Entrar com Senha"}
               </Button>
-              
+
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t border-slate-200" />
@@ -115,10 +115,10 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full h-11 text-sm" 
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-11 text-sm"
                 onClick={handleMagicLink}
                 disabled={loading || magicLoading}
               >
