@@ -24,6 +24,10 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
   const capa = value?.capa || {};
   const miolos = Array.isArray(value.miolos) && value.miolos.length > 0 ? value.miolos : [{}];
 
+  const updateGeral = (field: string, val: any) => {
+    onChange({ ...value, [field]: val });
+  };
+
   const updateCapa = (field: string, val: any) => {
     onChange({ ...value, capa: { ...(value.capa || {}), [field]: val } });
   };
@@ -54,6 +58,104 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
   return (
     <div className="mt-4 p-4 border rounded-md bg-muted/20 col-span-5">
       <h3 className="text-sm font-semibold mb-3">Especificações Editoriais</h3>
+      
+      {/* Topo do Painel: Tipo de Produto / Encadernação */}
+      <div className="flex flex-wrap items-end gap-3 mb-6 p-4 bg-blue-50/50 border border-blue-100 rounded-lg">
+        <div className="space-y-1.5 flex flex-col">
+          <Label className="text-xs font-bold text-blue-900">Tipo de Encadernação</Label>
+          <Select disabled={disabled} value={value.tipo_encadernacao || "none"} onValueChange={(val) => updateGeral("tipo_encadernacao", val === "none" ? "" : val)}>
+            <SelectTrigger className="h-8 bg-white border-blue-200 text-sm w-[250px]">
+              <SelectValue placeholder="Selecione..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Selecione...</SelectItem>
+              <SelectItem value="Grampo">Grampo</SelectItem>
+              <SelectItem value="Grampo Omega (2)">Grampo Omega (2)</SelectItem>
+              <SelectItem value="Grampo Omega (4)">Grampo Omega (4)</SelectItem>
+              <SelectItem value="Brochura colada s/ orelha">Brochura colada s/ orelha</SelectItem>
+              <SelectItem value="Brochura colada c/ orelha">Brochura colada c/ orelha</SelectItem>
+              <SelectItem value="Brochura Costurada s/ orelha">Brochura Costurada s/ orelha</SelectItem>
+              <SelectItem value="Brochura Costurada c/ orelha">Brochura Costurada c/ orelha</SelectItem>
+              <SelectItem value="Capa Flexível s/ orelha">Capa Flexível s/ orelha</SelectItem>
+              <SelectItem value="Capa Flexível c/ orelha">Capa Flexível c/ orelha</SelectItem>
+              <SelectItem value="Capa Dura">Capa Dura</SelectItem>
+              <SelectItem value="Espiral">Espiral</SelectItem>
+              <SelectItem value="Wire-O">Wire-O</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Condicionais Inline */}
+        {value.tipo_encadernacao?.includes("c/ orelha") && (
+          <div className="space-y-1.5 flex flex-col">
+            <Label className="text-xs">Medida da Orelha</Label>
+            <Input
+              disabled={disabled}
+              className="h-8 bg-white text-sm w-[150px]"
+              placeholder="Ex: 8cm"
+              value={value.medida_orelha || ""}
+              onChange={(e) => updateGeral("medida_orelha", e.target.value)}
+            />
+          </div>
+        )}
+
+        {value.tipo_encadernacao === "Capa Dura" && (
+          <div className="space-y-1.5 flex flex-col">
+            <Label className="text-xs">Espessura do Papelão</Label>
+            <Input
+              disabled={disabled}
+              className="h-8 bg-white text-sm w-[150px]"
+              placeholder="Ex: 2mm"
+              value={value.espessura_papelao || ""}
+              onChange={(e) => updateGeral("espessura_papelao", e.target.value)}
+            />
+          </div>
+        )}
+
+        {(value.tipo_encadernacao === "Espiral" || value.tipo_encadernacao === "Wire-O") && (
+          <>
+            <div className="space-y-1.5 flex flex-col">
+              <Label className="text-xs">Posição</Label>
+              <Select disabled={disabled} value={value.posicao_garra || "Lateral"} onValueChange={(val) => updateGeral("posicao_garra", val)}>
+                <SelectTrigger className="h-8 bg-white text-sm w-[120px]">
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Lateral">Lateral</SelectItem>
+                  <SelectItem value="Cabeça">Cabeça</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {value.tipo_encadernacao === "Espiral" && (
+              <div className="space-y-1.5 flex flex-col">
+                <Label className="text-xs">Material</Label>
+                <Select disabled={disabled} value={value.material_espiral || "Plástico"} onValueChange={(val) => updateGeral("material_espiral", val)}>
+                  <SelectTrigger className="h-8 bg-white text-sm w-[120px]">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Plástico">Plástico</SelectItem>
+                    <SelectItem value="Metálico">Metálico</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="space-y-1.5 flex flex-col">
+              <Label className="text-xs">Cor da Garra</Label>
+              <Input
+                disabled={disabled}
+                className="h-8 bg-white text-sm w-[120px]"
+                placeholder="Ex: Preto"
+                value={value.cor_garra || ""}
+                onChange={(e) => updateGeral("cor_garra", e.target.value)}
+              />
+            </div>
+          </>
+        )}
+      </div>
+
       <Tabs defaultValue="capa" className="w-full">
         <TabsList className="w-full justify-start border-b rounded-none px-0 h-auto bg-transparent">
           <TabsTrigger
@@ -69,10 +171,10 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
             Miolos
           </TabsTrigger>
           <TabsTrigger
-            value="final"
+            value="logistica"
             className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none shadow-none bg-transparent"
           >
-            Acabamento Final e Logística
+            Manuseio e Logística
           </TabsTrigger>
         </TabsList>
 
@@ -462,8 +564,88 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
             )}
           </div>
         </TabsContent>
-        <TabsContent value="final" className="pt-4">
-          <p className="text-sm text-muted-foreground">Campos do Acabamento Final e Logística aqui</p>
+        <TabsContent value="logistica" className="pt-4">
+          <div className="flex flex-col gap-4">
+            
+            {/* Bloco Manuseio */}
+            <div className="border rounded-lg p-4 bg-muted/20 space-y-4">
+              <h4 className="text-sm font-bold text-foreground">Manuseio</h4>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="montagem_kit"
+                  disabled={disabled}
+                  checked={!!value.montagem_kit}
+                  onCheckedChange={(checked) => updateGeral("montagem_kit", checked)}
+                />
+                <Label htmlFor="montagem_kit" className="text-xs font-medium leading-none cursor-pointer">
+                  Montagem de kit com outros itens/elementos
+                </Label>
+              </div>
+              <div className="space-y-1.5 w-full">
+                <Label className="text-xs">Instruções de Manuseio</Label>
+                <Textarea
+                  disabled={disabled}
+                  className="bg-card text-sm min-h-[60px]"
+                  value={value.instrucoes_manuseio || ""}
+                  onChange={(e) => updateGeral("instrucoes_manuseio", e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Bloco Acondicionamento */}
+            <div className="border rounded-lg p-4 bg-muted/20 space-y-4">
+              <h4 className="text-sm font-bold text-foreground">Acondicionamento e Logística</h4>
+              
+              <div className="flex flex-wrap items-center gap-6">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="shrink_individual"
+                    disabled={disabled}
+                    checked={!!value.shrink_individual}
+                    onCheckedChange={(checked) => updateGeral("shrink_individual", checked)}
+                  />
+                  <Label htmlFor="shrink_individual" className="text-xs font-medium leading-none cursor-pointer">
+                    Shrink individual
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="entrega_pallet"
+                    disabled={disabled}
+                    checked={!!value.entrega_pallet}
+                    onCheckedChange={(checked) => updateGeral("entrega_pallet", checked)}
+                  />
+                  <Label htmlFor="entrega_pallet" className="text-xs font-medium leading-none cursor-pointer">
+                    Entrega em pallet PBR
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="entrega_agendamento"
+                    disabled={disabled}
+                    checked={!!value.entrega_agendamento}
+                    onCheckedChange={(checked) => updateGeral("entrega_agendamento", checked)}
+                  />
+                  <Label htmlFor="entrega_agendamento" className="text-xs font-medium leading-none cursor-pointer">
+                    Entrega com agendamento
+                  </Label>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 flex flex-col">
+                <Label className="text-xs">Regramento específico de encaixotamento</Label>
+                <Input
+                  disabled={disabled}
+                  className="h-8 bg-card text-sm w-full md:w-[400px]"
+                  placeholder="Ex: Caixas com 20 un"
+                  value={value.regramento_encaixotamento || ""}
+                  onChange={(e) => updateGeral("regramento_encaixotamento", e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
