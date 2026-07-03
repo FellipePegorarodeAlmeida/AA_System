@@ -14,6 +14,40 @@ const formatDate = (dateStr: string | null) => {
   return new Date(dateStr).toLocaleDateString("pt-BR");
 };
 
+const buildSpecsString = (item: any) => {
+  const s = item.especificacao_tecnica || item.specs || {};
+  if (Object.keys(s).length === 0) {
+    // Fallback para orçamentos antigos
+    return [
+      item.formato ? `Formato: ${item.formato}` : (item.largura_mm ? `Formato: ${item.largura_mm}x${item.altura_mm}mm` : null),
+      item.substrato ? `Substrato: ${item.substrato}` : null,
+      item.acabamentos ? `Acabamentos: ${item.acabamentos}` : null
+    ].filter(Boolean).join(" | ");
+  }
+
+  const parts = [];
+  if (s.tipo_obra) parts.push(`Obra: ${s.tipo_obra}`);
+  if (s.regra_encadernacao) parts.push(`Encadernação: ${s.regra_encadernacao}`);
+  
+  if (s.capa) {
+    let c = `Capa: ${s.capa.papel} ${s.capa.gramatura} (${s.capa.cores || 's/ cor'})`;
+    if (s.capa.capa_dura) c += ` - Capa Dura (${s.capa.espessura_papelao})`;
+    const acabs = [s.capa.acabamento_1, s.capa.acabamento_2, s.capa.acabamento_3].filter(a => a && a !== 'Nenhum');
+    if (acabs.length > 0) c += ` [${acabs.join(', ')}]`;
+    parts.push(c);
+  }
+
+  if (s.miolos && Array.isArray(s.miolos)) {
+    s.miolos.forEach((m: any, idx: number) => {
+      let mStr = `Miolo ${idx + 1}: ${m.paginas || 0} pgs - ${m.papel} ${m.gramatura} (${m.cores || 's/ cor'})`;
+      const acabs = [m.acabamento1, m.acabamento2].filter(a => a && a !== 'Nenhum');
+      if (acabs.length > 0) mStr += ` [${acabs.join(', ')}]`;
+      parts.push(mStr);
+    });
+  }
+  return parts.join(" | ");
+};
+
 export default function OrcamentoPrintPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -85,6 +119,27 @@ export default function OrcamentoPrintPage() {
   }, {});
 
   const cenarios = Object.values(cenariosGroup) as any[];
+
+  cenarios.forEach((cenario) => {
+    const grouped: any[] = [];
+    const kits: Record<string, any> = {};
+
+    cenario.itens.forEach((it: any) => {
+      const kitName = it.especificacao_tecnica?.grupo_kit || it.specs?.grupo_kit;
+      if (kitName && kitName.trim() !== "") {
+        if (!kits[kitName]) {
+          kits[kitName] = { isKit: true, descricao: kitName, itens_filhos: [], quantidade: it.quantidade, quantidade_unidade: it.quantidade_unidade, total: 0, preco_unitario: 0 };
+          grouped.push(kits[kitName]);
+        }
+        kits[kitName].itens_filhos.push(it);
+        kits[kitName].total += (Number(it.total) || 0);
+        kits[kitName].preco_unitario = kits[kitName].total / kits[kitName].quantidade;
+      } else {
+        grouped.push({ isKit: false, ...it });
+      }
+    });
+    cenario.itens = grouped;
+  });
   
   const orcNumero = `ORC-${new Date(orcamento.created_at).getFullYear()}-${orcamento.numero}`;
   const modalidadeFrete = orcamento.modalidade_frete as string | null;
@@ -99,53 +154,43 @@ export default function OrcamentoPrintPage() {
       if (c.itens.length !== baseItens.length) return false;
       return c.itens.every((it: any, idx: number) => {
         const b = baseItens[idx];
-        return it.descricao === b.descricao &&
-               it.formato === b.formato &&
-               it.largura_mm === b.largura_mm &&
-               it.altura_mm === b.altura_mm &&
-               it.substrato === b.substrato &&
-               it.acabamentos === b.acabamentos;
+        return buildSpecsString(it) === buildSpecsString(b) && (it.especificacao_tecnica?.grupo_kit || it.specs?.grupo_kit || '') === (b.especificacao_tecnica?.grupo_kit || b.specs?.grupo_kit || '');
       });
     });
   }
 
-  const renderItemSpecs = (item: any) => (
-    <>
-      <p className="font-bold text-sm uppercase text-gray-900">{item.descricao}</p>
-      <div className="flex flex-wrap gap-x-6 gap-y-0.5 mt-1.5 text-[11px] text-gray-600">
-        {item.formato && (
-          <div>
-            <span className="font-semibold text-gray-500 uppercase">Formato: </span>
-            {item.formato}
-          </div>
-        )}
-        {!item.formato && Number(item.largura_mm) > 0 && Number(item.altura_mm) > 0 && (
-          <div>
-            <span className="font-semibold text-gray-500 uppercase">Formato: </span>
-            {item.largura_mm} x {item.altura_mm} mm
-          </div>
-        )}
-        {item.substrato && (
-          <div>
-            <span className="font-semibold text-gray-500 uppercase">Substrato: </span>
-            {item.substrato}
-          </div>
-        )}
-        {item.acabamentos && (
-          <div className="w-full mt-1">
-            <span className="font-semibold text-gray-500 uppercase block">Especificação: </span>
-            {item.acabamentos}
-          </div>
-        )}
+  const renderItemSpecs = (item: any) => {
+    if (item.isKit) {
+      return (
+        <>
+          <p className="font-black text-sm uppercase text-gray-900 mb-2">📦 KIT: {item.descricao}</p>
+          <ul className="pl-2 space-y-2 border-l-2 border-gray-200">
+            {item.itens_filhos.map((filho: any, i: number) => (
+              <li key={i} className="text-[11px] text-gray-600">
+                <span className="font-bold text-gray-800 uppercase block">{filho.descricao}</span>
+                {buildSpecsString(filho)}
+              </li>
+            ))}
+          </ul>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <p className="font-bold text-sm uppercase text-gray-900">{item.descricao}</p>
+        <p className="mt-1.5 text-[11px] text-gray-600 leading-relaxed">
+          {buildSpecsString(item)}
+        </p>
         {item.prazo_estimado && (
-          <div className="w-full mt-1">
-            <span className="font-semibold text-rose-700 uppercase">Prazo de Produção: </span>
-            <span className="text-gray-800 font-medium">{item.prazo_estimado}</span>
+          <div className="w-full mt-2">
+            <span className="font-semibold text-[10px] text-rose-700 uppercase">Prazo de Produção: </span>
+            <span className="text-gray-800 text-[11px] font-medium">{item.prazo_estimado}</span>
           </div>
         )}
-      </div>
-    </>
-  );
+      </>
+    );
+  };
 
   const renderTabelaItens = (listaItens: any[], title: string, subtotal: number) => (
     <div className="mb-4">
