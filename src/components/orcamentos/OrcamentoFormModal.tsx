@@ -26,6 +26,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { useConvertPedido } from "@/hooks/use-orcamentos";
 import { clientesService } from "@/services/clientesService";
+import { EspecificacaoEditorialPanel } from "./EspecificacaoEditorialPanel";
 
 // --- TIPAGENS BASE ---
 const emptyHeader = {
@@ -195,7 +196,8 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
       comissao_lfa_percentual: 0,
       comissao_agente_percentual: 0,
       ordem: nextOrdem,
-      ordem_proposta: nextOrdemProposta
+      ordem_proposta: nextOrdemProposta,
+      especificacao_tecnica: {}
     };
     const { data } = await supabase.from("orcamento_itens").insert(newItem).select().single();
     if (data) setItens([...itens, data]);
@@ -225,7 +227,8 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
       fornecedor_valor_total: 0,
       preco_unitario: 0,
       ordem: nextOrdem,
-      ordem_proposta: nextOrdemProposta
+      ordem_proposta: nextOrdemProposta,
+      especificacao_tecnica: lastItem.especificacao_tecnica || {}
     };
 
     const { data } = await supabase.from("orcamento_itens").insert(newItem).select().single();
@@ -315,6 +318,7 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
         nome_opcao: `${baseName} (Cópia)`,
         ordem: nextOrdem,
         ordem_proposta: maxOrdemProposta,
+        especificacao_tecnica: item.especificacao_tecnica || {},
       };
     });
 
@@ -688,6 +692,11 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                             <div className="col-span-1 grid gap-1.5"><Label className="text-xs">Prazo Estimado</Label><Input className="h-8 bg-card" value={p.specs.prazo_estimado || ""} onChange={e => updateSharedSpec(p.cenario_id, "prazo_estimado", e.target.value)} disabled={isLocked} /></div>
                             
                             <div className="col-span-5 grid gap-1.5"><Label className="text-xs">Especificação Completa</Label><Textarea className="min-h-[60px] bg-card text-sm" value={p.specs.acabamentos || ""} onChange={e => updateSharedSpec(p.cenario_id, "acabamentos", e.target.value)} disabled={isLocked} /></div>
+                            <EspecificacaoEditorialPanel
+                              value={p.specs.especificacao_tecnica || {}}
+                              onChange={(novoJson) => updateSharedSpec(p.cenario_id, 'especificacao_tecnica', novoJson)}
+                              disabled={isLocked}
+                            />
                           </div>
                         </div>
 

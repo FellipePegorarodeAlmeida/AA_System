@@ -218,6 +218,7 @@ export interface OrcamentoItem {
   aprovado_pelo_cliente: boolean | null;
   comissao_agente_percentual: number | null;
   comissao_lfa_percentual: number | null;
+  especificacao_tecnica?: Record<string, any> | null;
 }
 
 export interface Pedido {
