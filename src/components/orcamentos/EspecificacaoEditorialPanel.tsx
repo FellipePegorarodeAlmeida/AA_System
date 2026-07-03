@@ -339,21 +339,35 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
                     {/* Papel */}
                     <div className="space-y-1.5 flex flex-col">
                       <Label className="text-xs">Papel</Label>
-                      <Select disabled={disabled} value={miolo.papel || "none"} onValueChange={(val) => updateMiolo(index, "papel", val === "none" ? "" : val)}>
-                        <SelectTrigger className="h-8 bg-card text-sm w-[180px]">
-                          <SelectValue placeholder="Selecione..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Selecione...</SelectItem>
-                          <SelectItem value="Offset">Offset</SelectItem>
-                          <SelectItem value="Offwhite">Offwhite</SelectItem>
-                          <SelectItem value="Avory">Avory</SelectItem>
-                          <SelectItem value="Avena">Avena</SelectItem>
-                          <SelectItem value="Lux Cream">Lux Cream</SelectItem>
-                          <SelectItem value="Polen Soft">Polen Soft</SelectItem>
-                          <SelectItem value="Polen Natural">Polen Natural</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Select disabled={disabled} value={miolo.papel || "none"} onValueChange={(val) => updateMiolo(index, "papel", val === "none" ? "" : val)}>
+                          <SelectTrigger className="h-8 bg-card text-sm w-[180px]">
+                            <SelectValue placeholder="Selecione..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Selecione...</SelectItem>
+                            <SelectItem value="Offset">Offset</SelectItem>
+                            <SelectItem value="Offwhite">Offwhite</SelectItem>
+                            <SelectItem value="Avory">Avory</SelectItem>
+                            <SelectItem value="Avena">Avena</SelectItem>
+                            <SelectItem value="Lux Cream">Lux Cream</SelectItem>
+                            <SelectItem value="Polen Soft">Polen Soft</SelectItem>
+                            <SelectItem value="Polen Natural">Polen Natural</SelectItem>
+                            <SelectItem value="Couche brilho">Couche brilho</SelectItem>
+                            <SelectItem value="Couche Fosco">Couche Fosco</SelectItem>
+                            <SelectItem value="Papel especial">Papel especial</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {miolo.papel === "Papel especial" && (
+                          <Input
+                            disabled={disabled}
+                            className="h-8 bg-card text-sm w-[180px]"
+                            placeholder="Nome do papel"
+                            value={miolo.papel_especial_nome || ""}
+                            onChange={(e) => updateMiolo(index, "papel_especial_nome", e.target.value)}
+                          />
+                        )}
+                      </div>
                     </div>
 
                     {/* Gramatura */}
@@ -434,6 +448,7 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
                           <SelectItem value="Laminação BOPP Fosca">Laminação BOPP Fosca</SelectItem>
                           <SelectItem value="Laminação BOPP Brilho">Laminação BOPP Brilho</SelectItem>
                           <SelectItem value="Laminação BOPP Soft Touch">Laminação BOPP Soft Touch</SelectItem>
+                          <SelectItem value="Verniz UV Reserva (High gloss)">Verniz UV Reserva (High gloss)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
