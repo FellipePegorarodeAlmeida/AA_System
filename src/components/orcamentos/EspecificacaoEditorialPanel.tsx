@@ -11,6 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Trash2, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface EspecificacaoEditorialPanelProps {
   value: Record<string, any>;
@@ -20,9 +22,25 @@ interface EspecificacaoEditorialPanelProps {
 
 export function EspecificacaoEditorialPanel({ value, onChange, disabled }: EspecificacaoEditorialPanelProps) {
   const capa = value?.capa || {};
+  const miolos = Array.isArray(value.miolos) && value.miolos.length > 0 ? value.miolos : [{}];
 
   const updateCapa = (field: string, val: any) => {
     onChange({ ...value, capa: { ...(value.capa || {}), [field]: val } });
+  };
+
+  const updateMiolo = (index: number, field: string, val: any) => {
+    const newMiolos = [...miolos];
+    newMiolos[index] = { ...newMiolos[index], [field]: val };
+    onChange({ ...value, miolos: newMiolos });
+  };
+
+  const addMiolo = () => {
+    if (miolos.length < 3) onChange({ ...value, miolos: [...miolos, {}] });
+  };
+
+  const removeMiolo = (index: number) => {
+    const newMiolos = miolos.filter((_, i) => i !== index);
+    onChange({ ...value, miolos: newMiolos });
   };
 
   const acabamentosDisponiveis3 = [
@@ -251,7 +269,193 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
         </TabsContent>
 
         <TabsContent value="miolo" className="pt-4">
-          <p className="text-sm text-muted-foreground">Campos dos Miolos aqui</p>
+          <div className="space-y-4">
+            {miolos.map((miolo: any, index: number) => (
+              <div key={index} className="border rounded-lg p-4 bg-muted/20">
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="text-sm font-bold text-foreground">Caderno de Miolo {index + 1}</h4>
+                  {miolos.length > 1 && !disabled && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8"
+                      onClick={() => removeMiolo(index)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" /> Remover
+                    </Button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Páginas */}
+                  <div className="space-y-1.5 flex flex-col">
+                    <Label className="text-xs">Páginas</Label>
+                    <Input
+                      type="number"
+                      disabled={disabled}
+                      className="h-8 bg-card text-sm w-[100px]"
+                      value={miolo.paginas || ""}
+                      onChange={(e) => updateMiolo(index, "paginas", e.target.value)}
+                    />
+                  </div>
+
+                  {/* Papel */}
+                  <div className="space-y-1.5 flex flex-col">
+                    <Label className="text-xs">Papel</Label>
+                    <Select disabled={disabled} value={miolo.papel || "none"} onValueChange={(val) => updateMiolo(index, "papel", val === "none" ? "" : val)}>
+                      <SelectTrigger className="h-8 bg-card text-sm w-[180px]">
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Selecione...</SelectItem>
+                        <SelectItem value="Offset">Offset</SelectItem>
+                        <SelectItem value="Offwhite">Offwhite</SelectItem>
+                        <SelectItem value="Avory">Avory</SelectItem>
+                        <SelectItem value="Avena">Avena</SelectItem>
+                        <SelectItem value="Lux Cream">Lux Cream</SelectItem>
+                        <SelectItem value="Polen Soft">Polen Soft</SelectItem>
+                        <SelectItem value="Polen Natural">Polen Natural</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Gramatura */}
+                  <div className="space-y-1.5 flex flex-col">
+                    <Label className="text-xs">Gramatura</Label>
+                    <Select disabled={disabled} value={miolo.gramatura || "none"} onValueChange={(val) => updateMiolo(index, "gramatura", val === "none" ? "" : val)}>
+                      <SelectTrigger className="h-8 bg-card text-sm w-[100px]">
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Selecione...</SelectItem>
+                        <SelectItem value="56g/m²">56g/m²</SelectItem>
+                        <SelectItem value="58g/m²">58g/m²</SelectItem>
+                        <SelectItem value="63g/m²">63g/m²</SelectItem>
+                        <SelectItem value="65g/m²">65g/m²</SelectItem>
+                        <SelectItem value="70g/m²">70g/m²</SelectItem>
+                        <SelectItem value="80g/m²">80g/m²</SelectItem>
+                        <SelectItem value="90g/m²">90g/m²</SelectItem>
+                        <SelectItem value="115g/m²">115g/m²</SelectItem>
+                        <SelectItem value="150g/m²">150g/m²</SelectItem>
+                        <SelectItem value="170g/m²">170g/m²</SelectItem>
+                        <SelectItem value="180g/m²">180g/m²</SelectItem>
+                        <SelectItem value="210g/m²">210g/m²</SelectItem>
+                        <SelectItem value="240g/m²">240g/m²</SelectItem>
+                        <SelectItem value="250g/m²">250g/m²</SelectItem>
+                        <SelectItem value="300g/m²">300g/m²</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Cores e Pantone */}
+                  <div className="space-y-1.5 flex flex-col col-span-full md:col-span-1">
+                    <Label className="text-xs">Cores e Pantone</Label>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Input
+                        disabled={disabled}
+                        className="h-8 bg-card text-sm w-16"
+                        placeholder="Ex: 1x1"
+                        value={miolo.cores || ""}
+                        onChange={(e) => updateMiolo(index, "cores", e.target.value)}
+                      />
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`usa_pantone_miolo_${index}`}
+                          disabled={disabled}
+                          checked={!!miolo.usa_pantone}
+                          onCheckedChange={(checked) => updateMiolo(index, "usa_pantone", checked)}
+                        />
+                        <Label htmlFor={`usa_pantone_miolo_${index}`} className="text-xs font-medium leading-none cursor-pointer">
+                          Pantone?
+                        </Label>
+                      </div>
+                      {miolo.usa_pantone && (
+                        <Input
+                          disabled={disabled}
+                          className="h-8 bg-card text-sm w-[120px]"
+                          placeholder="Ex: 185 C"
+                          value={miolo.pantone_cor || ""}
+                          onChange={(e) => updateMiolo(index, "pantone_cor", e.target.value)}
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Acabamento 1 */}
+                  <div className="space-y-1.5 col-span-full">
+                    <Label className="text-xs">Acabamento 1</Label>
+                    <Select disabled={disabled} value={miolo.acabamento1 || "Nenhum"} onValueChange={(val) => updateMiolo(index, "acabamento1", val)}>
+                      <SelectTrigger className="h-8 bg-card text-sm w-[250px]">
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Nenhum">Nenhum</SelectItem>
+                        <SelectItem value="Verniz de máquina">Verniz de máquina</SelectItem>
+                        <SelectItem value="Laminação BOPP Fosca">Laminação BOPP Fosca</SelectItem>
+                        <SelectItem value="Laminação BOPP Brilho">Laminação BOPP Brilho</SelectItem>
+                        <SelectItem value="Laminação BOPP Soft Touch">Laminação BOPP Soft Touch</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Acabamento 2 */}
+                  <div className="space-y-1.5 col-span-full">
+                    <Label className="text-xs">Acabamento 2</Label>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Select disabled={disabled} value={miolo.acabamento2 || "Nenhum"} onValueChange={(val) => updateMiolo(index, "acabamento2", val)}>
+                        <SelectTrigger className="h-8 bg-card text-sm w-[250px]">
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Nenhum">Nenhum</SelectItem>
+                          <SelectItem value="Verniz UV Reserva (High gloss)">Verniz UV Reserva (High gloss)</SelectItem>
+                          <SelectItem value="Hotstamping">Hotstamping</SelectItem>
+                          <SelectItem value="Relevo">Relevo</SelectItem>
+                          <SelectItem value="High Print">High Print</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {miolo.acabamento2 === "Hotstamping" && (
+                        <>
+                          <Input
+                            disabled={disabled}
+                            className="h-8 bg-card text-sm w-[120px]"
+                            placeholder="Cor"
+                            value={miolo.hotstamping_cor || ""}
+                            onChange={(e) => updateMiolo(index, "hotstamping_cor", e.target.value)}
+                          />
+                          <Input
+                            disabled={disabled}
+                            className="h-8 bg-card text-sm w-[120px]"
+                            placeholder="Medida (ex: 5x5cm)"
+                            value={miolo.hotstamping_medida || ""}
+                            onChange={(e) => updateMiolo(index, "hotstamping_medida", e.target.value)}
+                          />
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Observações */}
+                  <div className="space-y-1.5 col-span-full mt-2">
+                    <Label className="text-xs">Observações</Label>
+                    <Textarea
+                      disabled={disabled}
+                      className="bg-card text-sm min-h-[40px]"
+                      value={miolo.observacoes || ""}
+                      onChange={(e) => updateMiolo(index, "observacoes", e.target.value)}
+                    />
+                  </div>
+
+                </div>
+              </div>
+            ))}
+            
+            {miolos.length < 3 && !disabled && (
+              <Button onClick={addMiolo} variant="outline" className="w-full border-dashed text-muted-foreground hover:text-foreground">
+                <Plus className="w-4 h-4 mr-2" /> Adicionar Caderno de Miolo
+              </Button>
+            )}
+          </div>
         </TabsContent>
         <TabsContent value="final" className="pt-4">
           <p className="text-sm text-muted-foreground">Campos do Acabamento Final e Logística aqui</p>
