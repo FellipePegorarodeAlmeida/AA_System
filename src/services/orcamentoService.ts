@@ -33,7 +33,7 @@ export const orcamentoService = {
       .from("orcamento_itens")
       .select(
         "id, descricao, quantidade, quantidade_unidade, preco_unitario, total, " +
-        "ordem_proposta, formato, largura_mm, altura_mm, substrato, acabamentos, prazo_estimado, fornecedor_id"
+        "ordem_proposta, formato, largura_mm, altura_mm, substrato, acabamentos, prazo_estimado, fornecedor_id, especificacao_tecnica"
       )
       .eq("orcamento_id", orcamentoId)
       .eq("incluir_na_proposta", true)
