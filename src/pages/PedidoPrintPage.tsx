@@ -353,7 +353,7 @@ export default function PedidoPrintPage() {
             {/* Comissão LFA */}
             <div>
               <span className="block text-[10px] text-gray-500 uppercase font-bold">
-                Comissão LFA (Bruta)
+                Comissão AA (Bruta)
               </span>
               <span className="font-semibold text-xs">
                 {formatMoney(comissaoLfa)}
@@ -372,7 +372,7 @@ export default function PedidoPrintPage() {
       </div>
 
       <div className="mt-12 text-center text-xs text-gray-400 print:block">
-        Gerado pelo sistema LFA Soluções em{" "}
+        Gerado pelo sistema AA Representação em{" "}
         {new Date().toLocaleString("pt-BR")}
       </div>
     </div>

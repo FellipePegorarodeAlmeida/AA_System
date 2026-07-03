@@ -139,7 +139,7 @@ export default function ResultadoLfaPage() {
   }, { valorTotalPedidos: 0, projecaoTotal: 0 });
 
   const exportCSV = () => {
-    const headers = ["Pedido", "Cliente", "Fornecedor", "Operacao", "Valor Total", "Resultado Liquido LFA", "Eh Expectativa"];
+    const headers = ["Pedido", "Cliente", "Fornecedor", "Operacao", "Valor Total", "Resultado Liquido AA", "Eh Expectativa"];
     const rows = filtered.map(p => {
       const result = getResultadoLiquido(p.id);
       const valorTotal = p.valor_total_pedido || p.total || fechamentos[p.id]?.valor_final_venda || 0;
@@ -181,7 +181,7 @@ export default function ResultadoLfaPage() {
           <span className="text-2xl font-black text-slate-700 mt-2">{formatMoney(totais.valorTotalPedidos)}</span>
         </div>
         <div className="p-5 border rounded-xl bg-card text-card-foreground shadow-sm flex flex-col justify-between border-emerald-100 dark:border-emerald-900/50">
-          <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-500 uppercase tracking-wider">Projeção LFA (Comissões/Receitas)</span>
+          <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-500 uppercase tracking-wider">Projeção AA (Comissões/Receitas)</span>
           <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2">{formatMoney(totais.projecaoTotal)}</span>
         </div>
       </div>
@@ -284,7 +284,7 @@ export default function ResultadoLfaPage() {
                 <div className="bg-muted/30 p-4 rounded-lg space-y-2 text-sm border">
                   <h4 className="font-semibold text-xs uppercase text-muted-foreground mb-3">Base Fechamento (Referência)</h4>
                   <div className="flex justify-between"><span className="text-muted-foreground">Valor do Pedido:</span> <span className="font-medium">{formatMoney(selectedPedido.total || selectedPedido.valor_total_pedido || fechamentos[selectedPedido.id]?.valor_final_venda || 0)}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Comissão LFA:</span> <span className="font-medium">{formatMoney(fechamentos[selectedPedido.id].comissao_lfa_valor)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Comissão AA:</span> <span className="font-medium">{formatMoney(fechamentos[selectedPedido.id].comissao_lfa_valor)}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Imposto Estimado:</span> <span className="font-medium">{formatMoney(fechamentos[selectedPedido.id].imposto_valor)}</span></div>
                 </div>
               )}
@@ -312,7 +312,7 @@ export default function ResultadoLfaPage() {
                               {r.status}
                             </Badge>
                             <span className={`text-[10px] font-semibold uppercase ${isRealLfa ? 'text-emerald-600' : 'text-slate-400'}`}>
-                              {isRealLfa ? "Fluxo Real LFA" : "Monitoramento"}
+                              {isRealLfa ? "Fluxo Real AA" : "Monitoramento"}
                             </span>
                           </div>
                         </div>
@@ -350,7 +350,7 @@ export default function ResultadoLfaPage() {
                               {p.status}
                             </Badge>
                             <span className={`text-[10px] font-semibold uppercase ${isDebitLfa ? 'text-red-600' : 'text-slate-400'}`}>
-                              {isDebitLfa ? "Fluxo Real LFA" : "Monitoramento"}
+                              {isDebitLfa ? "Fluxo Real AA" : "Monitoramento"}
                             </span>
                           </div>
                         </div>

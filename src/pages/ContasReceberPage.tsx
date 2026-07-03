@@ -86,7 +86,7 @@ export default function ContasReceberPage() {
 
   const renderCategoriaBadge = (cat: string) => {
     if (cat === 'RECEITA_REVENDA') return <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border border-blue-200">Revenda</span>;
-    if (cat === 'COMISSAO_LFA') return <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border border-purple-200">Comissão LFA</span>;
+    if (cat === 'COMISSAO_LFA') return <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border border-purple-200">Comissão AA</span>;
     if (cat === 'CONTROLE_CLIENTE_FORNECEDOR') return <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border border-amber-200">Ctrl Fornecedor</span>;
     return <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border border-gray-200">{cat?.replace(/_/g, ' ') || 'Outros'}</span>;
   };
@@ -143,7 +143,7 @@ export default function ContasReceberPage() {
         <div className="w-[140px]"><Label>De</Label><Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} /></div>
         <div className="w-[140px]"><Label>Até</Label><Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} /></div>
         <Select value={filtroStatus} onValueChange={setFiltroStatus}><SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="TODOS">Todos Status</SelectItem><SelectItem value="PREVISTO">Previsto</SelectItem><SelectItem value="RECEBIDO">Recebido</SelectItem></SelectContent></Select>
-        <Select value={filtroCategoria} onValueChange={setFiltroCategoria}><SelectTrigger className="w-[170px]"><SelectValue placeholder="Categoria" /></SelectTrigger><SelectContent><SelectItem value="TODAS">Todas Categ.</SelectItem><SelectItem value="RECEITA_REVENDA">Receita Revenda</SelectItem><SelectItem value="COMISSAO_LFA">Comissão LFA</SelectItem><SelectItem value="CONTROLE_CLIENTE_FORNECEDOR">Ctrl Fornecedor</SelectItem></SelectContent></Select>
+        <Select value={filtroCategoria} onValueChange={setFiltroCategoria}><SelectTrigger className="w-[170px]"><SelectValue placeholder="Categoria" /></SelectTrigger><SelectContent><SelectItem value="TODAS">Todas Categ.</SelectItem><SelectItem value="RECEITA_REVENDA">Receita Revenda</SelectItem><SelectItem value="COMISSAO_LFA">Comissão AA</SelectItem><SelectItem value="CONTROLE_CLIENTE_FORNECEDOR">Ctrl Fornecedor</SelectItem></SelectContent></Select>
       </div>
 
       {selecionados.size > 0 && (

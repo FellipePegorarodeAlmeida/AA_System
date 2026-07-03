@@ -73,7 +73,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
         <div className="leading-tight">
           <div className="text-sm font-semibold text-sidebar-accent-foreground">
-            LFA Soluções
+            AA Representação
           </div>
           <div className="text-[11px] text-muted-foreground">
             Sistema de controle

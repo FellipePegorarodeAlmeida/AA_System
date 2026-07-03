@@ -292,7 +292,7 @@ export function PedidoFechamentoEditor({ pedido, fechamento, onUpdateSuccess }: 
                 </div>
 
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Receita Bruta LFA:</span>
+                  <span className="text-muted-foreground">Receita Bruta AA:</span>
                   {isEditing ? (
                     <Input 
                       type="number"

@@ -711,7 +711,7 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                                   <th className="px-3 py-2">Custo Forn (R$)</th>
                                   
                                   <th className="px-3 py-2">% Com. Total</th>
-                                  {temAgente && <th className="px-3 py-2">% Comissão LFA</th>}
+                                  {temAgente && <th className="px-3 py-2">% Comissão AA</th>}
                                   <th className="px-3 py-2 text-center w-10">Ações</th>
                                 </tr>
                               </thead>
@@ -863,7 +863,7 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                           <span className="font-medium text-blue-700">{formatR$(calc.comissao_agente)}</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Receita LFA (Líquida)</span>
+                          <span className="text-muted-foreground">Receita AA (Líquida)</span>
                           <span className="font-bold text-emerald-700">{formatR$(calc.comissao_lfa)}</span>
                         </div>
                       </div>
