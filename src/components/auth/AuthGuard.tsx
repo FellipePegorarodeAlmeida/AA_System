@@ -9,25 +9,39 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-      if (!session) {
-        navigate("/login");
+    let mounted = true;
+
+    // 1. Busca a sessão inicial com calma
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (mounted) {
+        setSession(session);
+        setLoading(false);
+      }
+    };
+
+    checkSession();
+
+    // 2. Fica escutando mudanças (login/logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) {
+        setSession(session);
+        setLoading(false);
       }
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (!session) {
-        navigate("/login");
-      }
-    });
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+  // 3. O Segurança: Só redireciona se tiver certeza absoluta que terminou de carregar e não achou o crachá
+  useEffect(() => {
+    if (!loading && !session) {
+      navigate("/login", { replace: true });
+    }
+  }, [loading, session, navigate]);
 
   if (loading) {
     return (
@@ -38,7 +52,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (!session) {
-    return null;
+    return null; // Evita piscar a tela enquanto o useEffect de redirecionamento atua
   }
 
   return <>{children}</>;
