@@ -879,7 +879,7 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                     Nenhuma gráfica adicionada à concorrência. Selecione um fornecedor acima para iniciar.
                   </div>
                 ) : (
-                  <div className="border rounded-lg overflow-x-auto">
+                  <div className="border rounded-lg overflow-x-auto bg-card">
                     <table className="w-full text-sm text-left">
                       <thead className="bg-muted/60 text-xs uppercase font-semibold text-muted-foreground">
                         <tr>
@@ -901,15 +901,15 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                       </thead>
                       <tbody className="divide-y">
                         {itens.map((item: any) => (
-                          <tr key={item.id} className="hover:bg-muted/30">
+                          <tr key={item.id} className="hover:bg-muted/50">
                             <td className="p-4 border-r align-top">
-                              <p className="font-bold text-gray-900">{item.descricao}</p>
+                              <p className="font-bold text-foreground">{item.descricao}</p>
                               <p className="text-xs text-muted-foreground mt-0.5">{item.quantidade} {item.quantidade_unidade}(s)</p>
                             </td>
                             {colunasFornecedores.map(fornId => {
                               const conc = concorrencias.find(c => c.orcamento_item_id === item.id && c.fornecedor_id === fornId) || {};
                               return (
-                                <td key={fornId} className="p-4 border-r align-top bg-white">
+                                <td key={fornId} className="p-4 border-r align-top">
                                   <div className="space-y-3">
                                     <div>
                                       <Label className="text-[10px] text-muted-foreground">Custo Total (R$)</Label>
