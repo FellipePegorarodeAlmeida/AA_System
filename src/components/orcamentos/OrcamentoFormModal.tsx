@@ -61,6 +61,8 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
   const [form, setForm] = useState<any>({ ...emptyHeader });
   const [savedId, setSavedId] = useState<string | null>(null);
   const [itens, setItens] = useState<any[]>([]);
+  const [concorrencias, setConcorrencias] = useState<any[]>([]);
+  const [colunasFornecedores, setColunasFornecedores] = useState<string[]>([]);
   const [fechamento, setFechamento] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("header");
   const [saving, setSaving] = useState(false);
@@ -101,6 +103,8 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
         setSavedId(null);
         setForm({ ...emptyHeader });
         setItens([]);
+        setConcorrencias([]);
+        setColunasFornecedores([]);
         setFechamento(null);
         setActiveTab("header");
       }
@@ -126,6 +130,17 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
 
     const { data: itensData } = await supabase.from("orcamento_itens").select("*").eq("orcamento_id", orc.id).order("ordem");
     setItens(itensData || []);
+
+    const itemIds = itensData?.map((i: any) => i.id) || [];
+    if (itemIds.length > 0) {
+      const { data: concData } = await supabase.from("orcamento_concorrencias").select("*").in("orcamento_item_id", itemIds);
+      setConcorrencias(concData || []);
+      const uniqueForns = Array.from(new Set((concData || []).map((c: any) => c.fornecedor_id)));
+      setColunasFornecedores(uniqueForns as string[]);
+    } else {
+      setConcorrencias([]);
+      setColunasFornecedores([]);
+    }
 
     const { data: fechData } = await supabase.from("orcamento_fechamento").select("*").eq("orcamento_id", orc.id).maybeSingle();
     setFechamento(fechData);
@@ -523,9 +538,10 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
             <div className="bg-card px-6 pt-2 border-b">
-              <TabsList className="grid w-[400px] grid-cols-3 bg-muted">
+              <TabsList className="grid w-[500px] grid-cols-4 bg-muted">
                 <TabsTrigger value="header">Cabeçalho</TabsTrigger>
                 <TabsTrigger value="items" disabled={!savedId}>Produtos</TabsTrigger>
+                <TabsTrigger value="concorrencia" disabled={!savedId || itens.length === 0}>Concorrência</TabsTrigger>
                 <TabsTrigger value="closing" disabled={!savedId || itens.length === 0}>Fechamento</TabsTrigger>
               </TabsList>
             </div>
@@ -832,6 +848,95 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                       </TabsContent>
                     )})}
                   </Tabs>
+                )}
+              </TabsContent>
+
+              {/* --- ABA CONCORRÊNCIA --- */}
+              <TabsContent className="m-0 h-full flex flex-col p-6 overflow-y-auto" value="concorrencia">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="font-semibold text-foreground text-lg">Matriz de Concorrência</h3>
+                    <p className="text-xs text-muted-foreground">Adicione fornecedores e compare os custos de produção para cada cenário.</p>
+                  </div>
+                  {!isLocked && (
+                    <div className="flex gap-2">
+                      <Select onValueChange={(val) => {
+                        if (!colunasFornecedores.includes(val)) {
+                          setColunasFornecedores([...colunasFornecedores, val]);
+                        }
+                      }}>
+                        <SelectTrigger className="w-[250px]"><SelectValue placeholder="Adicionar Gráfica à Matriz" /></SelectTrigger>
+                        <SelectContent>
+                          {fornecedores.map(f => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+
+                {colunasFornecedores.length === 0 ? (
+                  <div className="text-center py-10 bg-muted/50 border border-dashed rounded-lg text-muted-foreground">
+                    Nenhuma gráfica adicionada à concorrência. Selecione um fornecedor acima para iniciar.
+                  </div>
+                ) : (
+                  <div className="border rounded-lg overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                      <thead className="bg-muted/60 text-xs uppercase font-semibold text-muted-foreground">
+                        <tr>
+                          <th className="px-4 py-3 min-w-[200px] border-r">Item / Quantidade</th>
+                          {colunasFornecedores.map(fornId => {
+                            const forn = fornecedores.find(f => f.id === fornId);
+                            return (
+                              <th key={fornId} className="px-4 py-3 min-w-[250px] border-r text-center">
+                                {forn?.nome || "Fornecedor"}
+                                {!isLocked && (
+                                  <button onClick={() => setColunasFornecedores(prev => prev.filter(id => id !== fornId))} className="ml-2 text-red-500 hover:text-red-700 font-normal normal-case text-[10px]">
+                                    (Remover)
+                                  </button>
+                                )}
+                              </th>
+                            );
+                          })}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {itens.map((item: any) => (
+                          <tr key={item.id} className="hover:bg-muted/30">
+                            <td className="p-4 border-r align-top">
+                              <p className="font-bold text-gray-900">{item.descricao}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{item.quantidade} {item.quantidade_unidade}(s)</p>
+                            </td>
+                            {colunasFornecedores.map(fornId => {
+                              const conc = concorrencias.find(c => c.orcamento_item_id === item.id && c.fornecedor_id === fornId) || {};
+                              return (
+                                <td key={fornId} className="p-4 border-r align-top bg-white">
+                                  <div className="space-y-3">
+                                    <div>
+                                      <Label className="text-[10px] text-muted-foreground">Custo Total (R$)</Label>
+                                      <Input type="number" className="h-8" value={conc.valor_total_custo || ""} disabled={isLocked} placeholder="0.00" />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div>
+                                        <Label className="text-[10px] text-muted-foreground">Nº Proposta</Label>
+                                        <Input className="h-8 text-xs" value={conc.numero_proposta_fornecedor || ""} disabled={isLocked} />
+                                      </div>
+                                      <div>
+                                        <Label className="text-[10px] text-muted-foreground">Comissão (R$)</Label>
+                                        <Input type="number" className="h-8 text-xs" value={conc.comissao_valor || ""} disabled={isLocked} />
+                                      </div>
+                                    </div>
+                                    <Button size="sm" variant={conc.is_vencedor ? "default" : "outline"} className={`w-full h-7 text-xs ${conc.is_vencedor ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`} disabled={isLocked}>
+                                      {conc.is_vencedor ? "✓ Vencedor" : "Definir Vencedor"}
+                                    </Button>
+                                  </div>
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </TabsContent>
 
