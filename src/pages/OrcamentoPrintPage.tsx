@@ -14,39 +14,7 @@ const formatDate = (dateStr: string | null) => {
   return new Date(dateStr).toLocaleDateString("pt-BR");
 };
 
-const buildSpecsString = (item: any) => {
-  const s = item.especificacao_tecnica || item.specs || {};
-  if (Object.keys(s).length === 0) {
-    // Fallback para orçamentos antigos
-    return [
-      item.formato ? `Formato: ${item.formato}` : (item.largura_mm ? `Formato: ${item.largura_mm}x${item.altura_mm}mm` : null),
-      item.substrato ? `Substrato: ${item.substrato}` : null,
-      item.acabamentos ? `Acabamentos: ${item.acabamentos}` : null
-    ].filter(Boolean).join(" | ");
-  }
 
-  const parts = [];
-  if (s.tipo_obra) parts.push(`Obra: ${s.tipo_obra}`);
-  if (s.regra_encadernacao) parts.push(`Encadernação: ${s.regra_encadernacao}`);
-  
-  if (s.capa) {
-    let c = `Capa: ${s.capa.papel} ${s.capa.gramatura} (${s.capa.cores || 's/ cor'})`;
-    if (s.capa.capa_dura) c += ` - Capa Dura (${s.capa.espessura_papelao})`;
-    const acabs = [s.capa.acabamento_1, s.capa.acabamento_2, s.capa.acabamento_3].filter(a => a && a !== 'Nenhum');
-    if (acabs.length > 0) c += ` [${acabs.join(', ')}]`;
-    parts.push(c);
-  }
-
-  if (s.miolos && Array.isArray(s.miolos)) {
-    s.miolos.forEach((m: any, idx: number) => {
-      let mStr = `Miolo ${idx + 1}: ${m.paginas || 0} pgs - ${m.papel} ${m.gramatura} (${m.cores || 's/ cor'})`;
-      const acabs = [m.acabamento1, m.acabamento2].filter(a => a && a !== 'Nenhum');
-      if (acabs.length > 0) mStr += ` [${acabs.join(', ')}]`;
-      parts.push(mStr);
-    });
-  }
-  return parts.join(" | ");
-};
 
 export default function OrcamentoPrintPage() {
   const { id } = useParams();
@@ -102,213 +70,145 @@ export default function OrcamentoPrintPage() {
     );
   }
 
-  // Agrupamento de Itens por Cenário
-  const cenariosGroup = itens.reduce((acc: any, item: any) => {
-    const cid = item.cenario_id || "default";
-    if (!acc[cid]) {
-      acc[cid] = {
-        cenario_id: cid,
-        nome_opcao: item.nome_opcao || "Opção " + (Object.keys(acc).length + 1),
-        itens: [],
-        subtotal: 0
-      };
+  // 1. Tradutor Atualizado (Com Pantone, Acabamentos da Capa e Detalhes)
+  const buildSpecsString = (item: any) => {
+    const s = item.especificacao_tecnica || item.specs || {};
+    if (Object.keys(s).length === 0 || !s.capa) {
+      return [
+        item.formato ? `Formato: ${item.formato}` : (item.largura_mm ? `Formato: ${item.largura_mm}x${item.altura_mm}mm` : null),
+        item.substrato ? `Substrato: ${item.substrato}` : null,
+        item.acabamentos ? `Acabamentos: ${item.acabamentos}` : null
+      ].filter(Boolean).join(" | ");
     }
-    acc[cid].itens.push(item);
-    acc[cid].subtotal += (Number(item.total) || 0);
-    return acc;
-  }, {});
 
-  const cenarios = Object.values(cenariosGroup) as any[];
-
-  cenarios.forEach((cenario) => {
-    const grouped: any[] = [];
-    const kits: Record<string, any> = {};
-
-    cenario.itens.forEach((it: any) => {
-      const kitName = it.especificacao_tecnica?.grupo_kit || it.specs?.grupo_kit;
-      if (kitName && kitName.trim() !== "") {
-        if (!kits[kitName]) {
-          kits[kitName] = { isKit: true, descricao: kitName, itens_filhos: [], quantidade: it.quantidade, quantidade_unidade: it.quantidade_unidade, total: 0, preco_unitario: 0 };
-          grouped.push(kits[kitName]);
-        }
-        kits[kitName].itens_filhos.push(it);
-        kits[kitName].total += (Number(it.total) || 0);
-        kits[kitName].preco_unitario = kits[kitName].total / kits[kitName].quantidade;
-      } else {
-        grouped.push({ isKit: false, ...it });
+    const parts = [];
+    if (s.tipo_obra) parts.push(`Obra: ${s.tipo_obra}`);
+    if (s.regra_encadernacao) {
+      let enc = `Encadernação: ${s.regra_encadernacao}`;
+      if (s.regra_encadernacao === 'Espiral') enc += ` ${s.espiral_material || ''} (${s.espiral_cor || ''})`;
+      if (s.regra_encadernacao === 'Wire-O' && s.wireo_cor) enc += ` (${s.wireo_cor})`;
+      parts.push(enc.trim());
+    }
+    
+    if (s.capa) {
+      let c = `Capa: ${s.capa.papel} ${s.capa.gramatura}`;
+      const coresCapa = s.capa.cores || 's/ cor';
+      const pantoneCapa = s.capa.usa_pantone && s.capa.pantone_cor ? ` + Pantone ${s.capa.pantone_cor}` : '';
+      c += ` (${coresCapa}${pantoneCapa})`;
+      if (s.capa.capa_dura) c += ` - Capa Dura (${s.capa.espessura_papelao})`;
+      
+      const acabsCapa = [s.capa.acabamento_1, s.capa.acabamento_2, s.capa.acabamento_3].filter((a: any) => a && a !== 'Nenhum');
+      if (s.capa.acabamento_2 === 'Hotstamping' && s.capa.acab_2_cor) {
+        const idx = acabsCapa.indexOf('Hotstamping');
+        if (idx !== -1) acabsCapa[idx] = `Hotstamping ${s.capa.acab_2_cor} ${s.capa.acab_2_medida ? '('+s.capa.acab_2_medida+')' : ''}`.trim();
       }
-    });
-    cenario.itens = grouped;
-  });
-  
-  const orcNumero = `ORC-${new Date(orcamento.created_at).getFullYear()}-${orcamento.numero}`;
-  const modalidadeFrete = orcamento.modalidade_frete as string | null;
-  const isFretesFOB = modalidadeFrete === "Frete FOB";
-  const isHub = agente?.nome?.toLowerCase().includes("hub");
-
-  // Matriz Grouping Intelligence
-  let isMatrix = false;
-  if (cenarios.length > 1) {
-    const baseItens = cenarios[0].itens;
-    isMatrix = cenarios.every(c => {
-      if (c.itens.length !== baseItens.length) return false;
-      return c.itens.every((it: any, idx: number) => {
-        const b = baseItens[idx];
-        return buildSpecsString(it) === buildSpecsString(b) && (it.especificacao_tecnica?.grupo_kit || it.specs?.grupo_kit || '') === (b.especificacao_tecnica?.grupo_kit || b.specs?.grupo_kit || '');
-      });
-    });
-  }
-
-  const renderItemSpecs = (item: any) => {
-    if (item.isKit) {
-      return (
-        <>
-          <p className="font-black text-sm uppercase text-gray-900 mb-2">📦 KIT: {item.descricao}</p>
-          <ul className="pl-2 space-y-2 border-l-2 border-gray-200">
-            {item.itens_filhos.map((filho: any, i: number) => (
-              <li key={i} className="text-[11px] text-gray-600">
-                <span className="font-bold text-gray-800 uppercase block">{filho.descricao}</span>
-                {buildSpecsString(filho)}
-              </li>
-            ))}
-          </ul>
-        </>
-      );
+      if (acabsCapa.length > 0) c += ` [${acabsCapa.join(', ')}]`;
+      parts.push(c);
     }
 
-    return (
-      <>
-        <p className="font-bold text-sm uppercase text-gray-900">{item.descricao}</p>
-        <p className="mt-1.5 text-[11px] text-gray-600 leading-relaxed">
-          {buildSpecsString(item)}
-        </p>
-        {item.prazo_estimado && (
-          <div className="w-full mt-2">
-            <span className="font-semibold text-[10px] text-rose-700 uppercase">Prazo de Produção: </span>
-            <span className="text-gray-800 text-[11px] font-medium">{item.prazo_estimado}</span>
-          </div>
-        )}
-      </>
-    );
+    if (s.miolos && Array.isArray(s.miolos)) {
+      s.miolos.forEach((m: any, idx: number) => {
+        const papelNome = m.papel === 'Papel especial' && m.papel_especial_nome ? m.papel_especial_nome : m.papel;
+        let mStr = `Miolo ${idx + 1}: ${m.paginas || 0} pgs - ${papelNome} ${m.gramatura}`;
+        
+        const coresMiolo = m.cores || 's/ cor';
+        const pantoneMiolo = m.usa_pantone && m.pantone_cor ? ` + Pantone ${m.pantone_cor}` : '';
+        mStr += ` (${coresMiolo}${pantoneMiolo})`;
+
+        const acabsMiolo = [m.acabamento_1, m.acabamento_2].filter((a: any) => a && a !== 'Nenhum');
+        if (m.acabamento_2 === 'Hotstamping' && m.acab_2_cor) {
+          const idx = acabsMiolo.indexOf('Hotstamping');
+          if (idx !== -1) acabsMiolo[idx] = `Hotstamping ${m.acab_2_cor} ${m.acab_2_medida ? '('+m.acab_2_medida+')' : ''}`.trim();
+        }
+        if (acabsMiolo.length > 0) mStr += ` [${acabsMiolo.join(', ')}]`;
+        parts.push(mStr);
+      });
+    }
+    return parts.join(" | ");
   };
 
-  const renderTabelaItens = (listaItens: any[], title: string, subtotal: number) => (
-    <div className="mb-4">
-      <h2 className="text-sm font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-4">
-        {title}
-      </h2>
-      <table className="w-full text-sm border-collapse">
-        <thead>
-          <tr className="border-b border-black text-gray-600">
-            <th className="py-2 text-left font-bold w-8">#</th>
-            <th className="py-2 text-left font-bold">Especificações Técnicas</th>
-            <th className="py-2 text-center font-bold w-12">Qtd</th>
-            <th className="py-2 text-right font-bold w-32">Val. Unit.</th>
-            <th className="py-2 text-right font-bold w-32">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {listaItens.map((item, index) => (
-            <tr
-              key={item.id}
-              className="border-b border-gray-200 last:border-black print:break-inside-avoid"
-            >
-              <td className="py-3 align-top text-gray-400 font-medium">
-                {item.ordem_proposta ?? index + 1}
-              </td>
-              <td className="py-3 pr-4 align-top">
-                {renderItemSpecs(item)}
-              </td>
-              <td className="py-3 text-center font-semibold align-top text-gray-800">
-                {item.quantidade}
-                {item.quantidade_unidade && item.quantidade_unidade !== "unidade" && (
-                  <span className="text-[10px] text-gray-400 ml-0.5">
-                    ({item.quantidade_unidade})
-                  </span>
-                )}
-              </td>
-              <td className="py-3 text-right align-top text-gray-600">
-                {formatMoneyUnitario(item.preco_unitario)}
-              </td>
-              <td className="py-3 text-right font-bold align-top text-gray-900">
-                {formatMoney(item.total)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="bg-gray-50 border-t-2 border-black py-4 pr-4 flex justify-end items-center gap-6">
-        <span className="font-bold uppercase text-[11px] tracking-widest text-gray-600">Total desta Opção</span>
-        <span className="font-black text-lg text-gray-900 w-32 text-right">{formatMoney(subtotal)}</span>
-      </div>
-    </div>
-  );
+  // 2. Block Engine (Agrupador Inteligente)
+  const groupedBlocks: any[] = [];
+  itens.forEach(it => {
+    const s = it.especificacao_tecnica || it.specs || {};
+    const isKit = !!s.grupo_kit;
+    const isSku = s.tipo_variacao_opcoes === 'sku';
+    const blockName = isKit ? s.grupo_kit : it.descricao;
+    const specsStr = buildSpecsString(it);
+    
+    // Se for SKU diferente, nunca agrupa por quantidade. Se for Kit ou Quantidade, agrupa.
+    const blockId = isKit ? `KIT_${s.grupo_kit}` : (isSku ? `SKU_${it.id}` : `AVULSO_${it.descricao}_${specsStr}`);
 
-  const renderMatriz = () => {
-    const baseItens = cenarios[0].itens;
-    return (
-      <div className="mb-8">
-        <h2 className="text-sm font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-4">
-          Comparativo de Opções
-        </h2>
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="border-b border-black text-gray-600">
-              <th className="py-2 text-left font-bold w-8">#</th>
-              <th className="py-2 text-left font-bold">Especificações Técnicas</th>
-              <th className="py-2 text-left font-bold">Opções de Investimento</th>
-            </tr>
-          </thead>
-          <tbody>
-            {baseItens.map((baseItem: any, index: number) => (
-              <tr
-                key={baseItem.id}
-                className="border-b border-gray-200 last:border-black print:break-inside-avoid"
-              >
-                <td className="py-3 align-top text-gray-400 font-medium">
-                  {baseItem.ordem_proposta ?? index + 1}
-                </td>
-                <td className="py-3 pr-4 align-top w-1/2 border-r border-gray-200">
-                  {renderItemSpecs(baseItem)}
-                </td>
-                <td className="py-3 pl-4 align-top">
-                  <div className="space-y-3">
-                    {cenarios.map((c: any) => {
-                      const itemData = c.itens[index];
-                      return (
-                        <div key={c.cenario_id} className="flex items-center justify-between bg-gray-50 p-2 rounded border border-gray-100">
-                          <div>
-                            <span className="block text-[10px] font-bold uppercase text-gray-500">{c.nome_opcao}</span>
-                            <span className="font-semibold">
-                              {itemData.quantidade} {itemData.quantidade_unidade !== "unidade" ? itemData.quantidade_unidade : ""}
-                            </span>
-                            <span className="text-xs text-gray-500 ml-2">({formatMoneyUnitario(itemData.preco_unitario)}/un)</span>
-                          </div>
-                          <div className="text-right font-bold text-gray-900">
-                            {formatMoney(itemData.total)}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="bg-gray-50 border-t-2 border-black py-4 pr-4 flex justify-end gap-12">
-          <span className="font-bold uppercase text-[11px] tracking-widest text-gray-600 mt-1">Resumo de Totais</span>
-          <div className="space-y-2 min-w-[250px]">
-            {cenarios.map((c: any) => (
-              <div key={c.cenario_id} className="flex justify-between items-center">
-                <span className="text-xs font-bold text-gray-600">{c.nome_opcao}</span>
-                <span className="font-black text-gray-900">{formatMoney(c.subtotal)}</span>
-              </div>
-            ))}
+    let block = groupedBlocks.find(b => b.blockId === blockId);
+    if (!block) {
+      block = { blockId, isKit, name: blockName, components: [], quantities: {} };
+      groupedBlocks.push(block);
+    }
+
+    // Adiciona a especificação apenas se não for repetida no bloco
+    if (!block.components.find((c: any) => c.specsStr === specsStr)) {
+      block.components.push({ descricao: it.descricao, specsStr, prazo: it.prazo_estimado });
+    }
+
+    // Soma os valores nas opções de quantidade
+    const qKey = it.quantidade;
+    if (!block.quantities[qKey]) {
+      block.quantities[qKey] = { quantidade: it.quantidade, quantidade_unidade: it.quantidade_unidade, total: 0 };
+    }
+    block.quantities[qKey].total += (Number(it.total) || 0);
+  });
+
+  // 3. Renderizador de Blocos
+  const renderBlocks = () => {
+    return groupedBlocks.map((block, index) => (
+      <div key={block.blockId} className="mb-6 page-break-inside-avoid border-2 border-black rounded-lg overflow-hidden">
+        <div className="bg-gray-100 px-4 py-2 border-b-2 border-black flex items-center justify-between">
+          <h2 className="text-sm font-black uppercase text-gray-900 tracking-widest">
+            {block.isKit ? `📦 KIT: ${block.name}` : `${index + 1}. ${block.name}`}
+          </h2>
+        </div>
+        <div className="p-4">
+          <div className="mb-4">
+            <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 border-b border-gray-200 pb-1">Especificações Técnicas</h3>
+            <ul className="space-y-3">
+              {block.components.map((comp: any, i: number) => (
+                <li key={i} className="text-xs text-gray-700">
+                  {block.isKit && <span className="font-bold block text-gray-900 uppercase mb-0.5">{comp.descricao}</span>}
+                  <span className="leading-relaxed block">{comp.specsStr}</span>
+                  {comp.prazo && <span className="text-[10px] text-rose-700 font-semibold block mt-0.5">Prazo: {comp.prazo}</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 border-b border-gray-200 pb-1">Opções de Investimento</h3>
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="border-b border-gray-300 text-gray-600 text-[11px] uppercase">
+                  <th className="py-2 text-left font-bold">Quantidade</th>
+                  <th className="py-2 text-right font-bold w-32">Val. Unit.</th>
+                  <th className="py-2 text-right font-bold w-32">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.values(block.quantities).sort((a:any, b:any) => a.quantidade - b.quantidade).map((q: any, i) => {
+                  const unitPrice = q.total / q.quantidade;
+                  return (
+                    <tr key={i} className="border-b border-gray-100 last:border-0">
+                      <td className="py-2.5 font-bold text-gray-800">
+                        {q.quantidade} <span className="text-[10px] font-medium text-gray-500 ml-1">{q.quantidade_unidade !== 'unidade' ? q.quantidade_unidade : ''}</span>
+                      </td>
+                      <td className="py-2.5 text-right text-gray-600 font-medium">{formatMoneyUnitario(unitPrice)}</td>
+                      <td className="py-2.5 text-right font-black text-gray-900">{formatMoney(q.total)}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
-    );
+    ));
   };
 
   return (
@@ -438,10 +338,8 @@ export default function OrcamentoPrintPage() {
         </div>
       )}
 
-      {/* ── Tabela de Investimento (Itens) ─────────────────────── */}
-      {isMatrix ? renderMatriz() : cenarios.map((opcao) => 
-        renderTabelaItens(opcao.itens, opcao.nome_opcao, opcao.subtotal)
-      )}
+      {/* ── Tabela de Investimento (Blocos Consolidados) ─────────────────────── */}
+      {renderBlocks()}
 
       {/* ── Observações + Financeiro ───────────────────────────── */}
       <div className="grid grid-cols-3 gap-6 mb-10">
