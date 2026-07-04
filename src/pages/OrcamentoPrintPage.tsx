@@ -70,6 +70,11 @@ export default function OrcamentoPrintPage() {
     );
   }
 
+  const orcNumero = `ORC-${new Date(orcamento.created_at).getFullYear()}-${orcamento.numero}`;
+  const modalidadeFrete = orcamento.modalidade_frete as string | null;
+  const isFretesFOB = modalidadeFrete === "Frete FOB";
+  const isHub = agente?.nome?.toLowerCase().includes("hub");
+
   // 1. Tradutor Atualizado (Com Pantone, Acabamentos da Capa e Detalhes)
   const buildSpecsString = (item: any) => {
     const s = item.especificacao_tecnica || item.specs || {};
