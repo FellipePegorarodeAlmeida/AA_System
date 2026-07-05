@@ -286,48 +286,93 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
     await supabase.from("orcamento_itens").update(updatePayload).eq("id", id);
   }
 
-  function updateConcorrenciaLocal(itemId: string, fornId: string, field: string, value: any) {
+  const buildSpecsString = (item: any) => {
+    const s = item.especificacao_tecnica || item.specs || {};
+    if (Object.keys(s).length === 0 || !s.capa) {
+      return [
+        item.formato ? `Formato: ${item.formato}` : (item.largura_mm ? `Formato: ${item.largura_mm}x${item.altura_mm}mm` : null),
+        item.substrato ? `Substrato: ${item.substrato}` : null,
+        item.acabamentos ? `Acabamentos: ${item.acabamentos}` : null
+      ].filter(Boolean).join(" | ");
+    }
+    const parts = [];
+    if (s.tipo_obra) parts.push(`Obra: ${s.tipo_obra}`);
+    if (s.regra_encadernacao) {
+      let enc = `Encadernação: ${s.regra_encadernacao}`;
+      if (s.regra_encadernacao === 'Espiral') enc += ` ${s.espiral_material || ''} (${s.espiral_cor || ''})`;
+      if (s.regra_encadernacao === 'Wire-O' && s.wireo_cor) enc += ` (${s.wireo_cor})`;
+      parts.push(enc.trim());
+    }
+    if (s.capa) {
+      let c = `Capa: ${s.capa.papel} ${s.capa.gramatura}`;
+      c += ` (${s.capa.cores || 's/ cor'}${s.capa.usa_pantone && s.capa.pantone_cor ? ' + Pantone ' + s.capa.pantone_cor : ''})`;
+      if (s.capa.capa_dura) c += ` - Capa Dura (${s.capa.espessura_papelao})`;
+      const acabsCapa = [s.capa.acabamento_1, s.capa.acabamento_2, s.capa.acabamento_3].filter((a: any) => a && a !== 'Nenhum');
+      if (acabsCapa.length > 0) c += ` [${acabsCapa.join(', ')}]`;
+      parts.push(c);
+    }
+    if (s.miolos && Array.isArray(s.miolos)) {
+      s.miolos.forEach((m: any, idx: number) => {
+        let mStr = `Miolo ${idx + 1}: ${m.paginas || 0} pgs - ${m.papel} ${m.gramatura}`;
+        mStr += ` (${m.cores || 's/ cor'}${m.usa_pantone && m.pantone_cor ? ' + Pantone ' + m.pantone_cor : ''})`;
+        const acabsMiolo = [m.acabamento_1, m.acabamento_2].filter((a: any) => a && a !== 'Nenhum');
+        if (acabsMiolo.length > 0) mStr += ` [${acabsMiolo.join(', ')}]`;
+        parts.push(mStr);
+      });
+    }
+    return parts.join(" | ");
+  };
+
+  async function updateConcorrenciaBD(itemId: string, fornId: string, field: string, value: any) {
     if (isLocked) return;
+    const atual = concorrencias.find(c => c.orcamento_item_id === itemId && c.fornecedor_id === fornId);
+    
     setConcorrencias(prev => {
-      const index = prev.findIndex(c => c.orcamento_item_id === itemId && c.fornecedor_id === fornId);
-      if (index >= 0) {
-        const newArr = [...prev];
-        newArr[index] = { ...newArr[index], [field]: value };
-        return newArr;
+      const existe = prev.some(c => c.orcamento_item_id === itemId && c.fornecedor_id === fornId);
+      if (existe) {
+        return prev.map(c => (c.orcamento_item_id === itemId && c.fornecedor_id === fornId) ? { ...c, [field]: value } : c);
       } else {
-        return [...prev, {
-          id: crypto.randomUUID(), // Temp ID para UI
-          orcamento_item_id: itemId,
-          fornecedor_id: fornId,
-          valor_total_custo: 0,
-          comissao_valor: 0,
-          numero_proposta_fornecedor: "",
-          is_vencedor: false,
-          [field]: value
-        }];
+        return [...prev, { id: 'temp', orcamento_item_id: itemId, fornecedor_id: fornId, [field]: value }];
       }
     });
+
+    if (atual?.id && atual.id !== 'temp') {
+      await supabase.from("orcamento_concorrencias").update({ [field]: value }).eq("id", atual.id);
+    } else {
+      const insertPayload = {
+        orcamento_item_id: itemId,
+        fornecedor_id: fornId,
+        valor_total_custo: field === 'valor_total_custo' ? Number(value) : 0,
+        comissao_valor: field === 'comissao_valor' ? Number(value) : 0,
+        numero_proposta_fornecedor: field === 'numero_proposta_fornecedor' ? String(value) : "",
+        is_vencedor: false
+      };
+      const { data } = await supabase.from("orcamento_concorrencias").insert(insertPayload).select().single();
+      if (data) {
+        setConcorrencias(prev => prev.map(c => (c.orcamento_item_id === itemId && c.fornecedor_id === fornId) ? data : c));
+      }
+    }
   }
 
   async function handleDefinirVencedor(itemId: string, fornId: string) {
     if (isLocked) return;
-
     const conc = concorrencias.find(c => c.orcamento_item_id === itemId && c.fornecedor_id === fornId);
     if (!conc) return;
 
-    // Marca o vencedor localmente na matriz
+    await supabase.from("orcamento_concorrencias").update({ is_vencedor: false }).eq("orcamento_item_id", itemId);
+    if (conc.id && conc.id !== 'temp') {
+      await supabase.from("orcamento_concorrencias").update({ is_vencedor: true }).eq("id", conc.id);
+    }
+
     setConcorrencias(prev => prev.map(c => ({
       ...c,
       is_vencedor: c.orcamento_item_id === itemId ? c.fornecedor_id === fornId : c.is_vencedor
     })));
 
-    // Dispara o 'feed' de via única para a aba de Itens
     await updateItemBD(itemId, "fornecedor_id", fornId);
-    await updateItemBD(itemId, "fornecedor_numero_proposta", conc.numero_proposta_fornecedor);
-    if (conc.comissao_valor) await updateItemBD(itemId, "comissao_lfa_valor", conc.comissao_valor);
-    await updateItemBD(itemId, "fornecedor_valor_total", conc.valor_total_custo);
-    
-    toast({ title: "Vencedor aplicado", description: "O custo foi transferido para o item." });
+    await updateItemBD(itemId, "fornecedor_numero_proposta", conc.numero_proposta_fornecedor || "");
+    await updateItemBD(itemId, "fornecedor_valor_total", Number(conc.valor_total_custo) || 0);
+    toast({ title: "Vencedor aplicado!" });
   }
 
   function handleImprimirSolicitacao(fornId: string) {
@@ -491,32 +536,7 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
           await supabase.from("orcamento_fechamento").insert(fechPayload);
         }
         
-        // Salvar matriz de concorrências (Refatorado e Blindado)
-        const itemIdsToSave = itens.map(i => i.id);
-        if (itemIdsToSave.length > 0) {
-          // 1. Limpa o terreno (Trata erro silencioso)
-          const { error: delErr } = await supabase.from("orcamento_concorrencias").delete().in("orcamento_item_id", itemIdsToSave);
-          if (delErr) console.error("Falha ao limpar concorrências antigas:", delErr);
-  
-          // 2. Filtra apenas os válidos e prepara a inserção
-          const validConcs = concorrencias.filter(c => c.fornecedor_id && c.orcamento_item_id);
-          if (validConcs.length > 0) {
-            const concsToInsert = validConcs.map(c => ({
-              orcamento_item_id: c.orcamento_item_id,
-              fornecedor_id: c.fornecedor_id,
-              numero_proposta_fornecedor: c.numero_proposta_fornecedor || null,
-              valor_total_custo: Number(c.valor_total_custo) || 0,
-              comissao_valor: Number(c.comissao_valor) || 0,
-              is_vencedor: c.is_vencedor || false
-            }));
-            
-            const { error: insErr } = await supabase.from("orcamento_concorrencias").insert(concsToInsert);
-            if (insErr) {
-              console.error("Falha ao gravar matriz:", insErr);
-              toast({ title: "Erro na Matriz", description: "Ocorreu um erro ao salvar a concorrência.", variant: "destructive" });
-            }
-          }
-        }
+
 
         toast({ title: "Orçamento salvo!" });
       }
@@ -932,132 +952,94 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
 
               {/* --- ABA CONCORRÊNCIA --- */}
               <TabsContent value="concorrencia" className="m-0 h-full flex flex-col space-y-6">
-                <div className="bg-card p-5 border rounded-lg shadow-sm flex flex-col h-full">
+                <div className="bg-card p-5 border border-border rounded-lg shadow-sm flex flex-col h-full">
                   <div className="flex justify-between items-center mb-6">
                     <div>
-                      <h3 className="font-semibold text-foreground text-lg">Matriz de Concorrência</h3>
-                      <p className="text-xs text-muted-foreground">Adicione gráficas e compare valores totais. A escolha sobrepõe o custo do item.</p>
+                      <h3 className="font-semibold text-card-foreground text-lg">Matriz de Concorrência</h3>
+                      <p className="text-xs text-muted-foreground">Adicione gráficas e compare valores totais. Modificações salvam automaticamente.</p>
                     </div>
                     {!isLocked && (
-                      <div className="flex gap-2">
-                        <Select onValueChange={(val) => {
-                          if (!colunasFornecedores.includes(val)) {
-                            setColunasFornecedores([...colunasFornecedores, val]);
-                            setExibirClienteMap(prev => ({ ...prev, [val]: true })); // Default: mostra cliente
-                          }
-                        }}>
-                          <SelectTrigger className="w-[280px] bg-background"><SelectValue placeholder="Adicionar Gráfica à Matriz" /></SelectTrigger>
-                          <SelectContent>
-                            {fornecedores.map(f => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <Select onValueChange={(val) => {
+                        if (!colunasFornecedores.includes(val)) {
+                          setColunasFornecedores([...colunasFornecedores, val]);
+                          setExibirClienteMap(prev => ({ ...prev, [val]: true }));
+                        }
+                      }}>
+                        <SelectTrigger className="w-[280px] bg-background border-input"><SelectValue placeholder="Adicionar Gráfica à Matriz" /></SelectTrigger>
+                        <SelectContent>
+                          {fornecedores.map(f => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     )}
                   </div>
-
+              
                   {colunasFornecedores.length === 0 ? (
-                    <div className="text-center py-12 bg-muted/50 border border-dashed rounded-lg text-muted-foreground">
+                    <div className="text-center py-12 bg-muted/20 border border-dashed border-border rounded-lg text-muted-foreground">
                       Nenhuma gráfica adicionada à concorrência. Selecione um fornecedor acima para iniciar.
                     </div>
                   ) : (
-                    <div className="border rounded-lg overflow-auto max-h-[55vh] flex-1 shadow-inner bg-muted/10">
-                      <table className="w-full text-sm text-left">
-                        <thead className="bg-muted/60 text-xs uppercase font-semibold text-muted-foreground sticky top-0 z-10">
+                    <div className="border border-border rounded-lg overflow-auto max-h-[55vh] flex-1 bg-background/50">
+                      <table className="w-full text-sm text-left border-collapse">
+                        <thead className="bg-muted text-xs uppercase font-semibold text-muted-foreground sticky top-0 z-20 border-b border-border">
                           <tr>
-                            <th className="px-4 py-3 min-w-[250px] border-r border-b">Item / Cenário</th>
+                            <th className="px-4 py-3 min-w-[280px] border-r border-border bg-muted">Item / Ficha Técnica</th>
                             {colunasFornecedores.map(fornId => {
                               const forn = fornecedores.find(f => f.id === fornId);
                               return (
-                                <th key={fornId} className="px-4 py-3 min-w-[280px] border-r border-b text-center bg-muted/60">
+                                <th key={fornId} className="px-4 py-3 min-w-[280px] border-r border-border text-center bg-muted">
                                   <div className="flex items-center justify-center gap-2">
-                                    <span className="font-bold">{forn?.nome || "Fornecedor"}</span>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-100" 
-                                      onClick={() => handleImprimirSolicitacao(fornId)}
-                                      title="Gerar Solicitação em PDF"
-                                    >
+                                    <span className="font-bold text-foreground">{forn?.nome || "Fornecedor"}</span>
+                                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-primary hover:bg-muted" onClick={() => handleImprimirSolicitacao(fornId)}>
                                       <Printer className="h-4 w-4" />
                                     </Button>
                                   </div>
-                                  {!isLocked && (
-                                    <button onClick={() => setColunasFornecedores(prev => prev.filter(id => id !== fornId))} className="mt-1 text-red-500 hover:text-red-700 font-normal normal-case text-[10px] underline block mx-auto">
-                                      remover
-                                    </button>
-                                  )}
-                                  <div className="flex items-center justify-center gap-1.5 mt-2 bg-white/50 py-1 px-2 rounded border border-gray-200 w-fit mx-auto">
-                                    <Checkbox 
-                                      id={`show-cli-${fornId}`}
-                                      checked={exibirClienteMap[fornId] !== false}
-                                      onCheckedChange={(v) => setExibirClienteMap(prev => ({ ...prev, [fornId]: !!v }))}
-                                    />
-                                    <Label htmlFor={`show-cli-${fornId}`} className="text-[9px] cursor-pointer whitespace-nowrap uppercase font-bold text-gray-600">
-                                      Exibir Cliente
-                                    </Label>
+                                  <div className="flex items-center justify-center gap-1.5 mt-2 bg-background border border-border py-1 px-2 rounded w-fit mx-auto">
+                                    <Checkbox id={`show-cli-${fornId}`} checked={exibirClienteMap[fornId] !== false} onCheckedChange={(v) => setExibirClienteMap(prev => ({ ...prev, [fornId]: !!v }))} />
+                                    <Label htmlFor={`show-cli-${fornId}`} className="text-[9px] cursor-pointer whitespace-nowrap uppercase font-bold text-muted-foreground">Exibir Cliente</Label>
                                   </div>
+                                  {!isLocked && (
+                                    <button onClick={() => setColunasFornecedores(prev => prev.filter(id => id !== fornId))} className="mt-1 text-destructive hover:underline font-normal normal-case text-[10px] block mx-auto">remover</button>
+                                  )}
                                 </th>
                               );
                             })}
                           </tr>
                         </thead>
-                        <tbody className="divide-y">
+                        <tbody className="divide-y divide-border">
                           {itens.map((item: any) => (
-                            <tr key={item.id} className="hover:bg-muted/30">
-                              <td className="p-4 border-r align-top bg-background min-w-[250px]">
+                            <tr key={item.id} className="hover:bg-muted/40 transition-colors">
+                              <td className="p-4 border-r border-border align-top bg-card">
                                 <p className="font-bold text-foreground leading-tight">{item.descricao}</p>
                                 
-                                {/* Resumo Técnico (Lê raiz e JSONB) */}
-                                <div className="mt-3 space-y-1 text-[10px] text-muted-foreground leading-tight">
-                                  {item.especificacao_tecnica?.grupo_kit && (
-                                    <span className="bg-indigo-500/10 text-indigo-500 px-1.5 py-0.5 rounded uppercase font-bold text-[9px] mb-1 inline-block">
-                                      Kit: {item.especificacao_tecnica.grupo_kit}
-                                    </span>
-                                  )}
-                                  
-                                  {(Number(item.largura_mm) > 0 && Number(item.altura_mm) > 0) ? (
-                                    <p><span className="font-semibold uppercase text-foreground/70">Formato:</span> {item.largura_mm}x{item.altura_mm}mm</p>
-                                  ) : item.formato ? (
-                                    <p><span className="font-semibold uppercase text-foreground/70">Formato:</span> {item.formato}</p>
-                                  ) : null}
-                                  
-                                  {item.substrato && <p><span className="font-semibold uppercase text-foreground/70">Papel:</span> {item.substrato}</p>}
-                                  
-                                  {/* Extrato rico do JSONB (Editorial) */}
-                                  {item.especificacao_tecnica?.capa?.tipo && (
-                                    <p><span className="font-semibold uppercase text-foreground/70">Capa:</span> {item.especificacao_tecnica.capa.tipo} - {item.especificacao_tecnica.capa.papel}</p>
-                                  )}
-                                  {item.especificacao_tecnica?.miolo?.papel && (
-                                    <p><span className="font-semibold uppercase text-foreground/70">Miolo:</span> {item.especificacao_tecnica.miolo.papel} {item.especificacao_tecnica.miolo.gramatura}g ({item.especificacao_tecnica.miolo.paginas} pág)</p>
-                                  )}
-                                  
-                                  {item.acabamentos && <p className="line-clamp-3" title={item.acabamentos}><span className="font-semibold uppercase text-foreground/70">Acab.:</span> {item.acabamentos}</p>}
-                                </div>
+                                {/* EXTRATO DA FICHA TÉCNICA DINÂMICA IGUAL À PROPOSTA */}
+                                <p className="text-[11px] text-muted-foreground leading-relaxed mt-2 italic bg-background/50 p-2 rounded border border-border">
+                                  {buildSpecsString(item)}
+                                </p>
                                 
-                                <div className="mt-4 pt-3 border-t border-border">
-                                  <p className="text-xs font-medium text-foreground">Qtd: {item.quantidade} {item.quantidade_unidade}(s)</p>
+                                <div className="mt-3 text-xs text-foreground font-medium">
+                                  Qtd: {item.quantidade} {item.quantidade_unidade}(s) | Venda: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.total || 0)}
                                 </div>
                               </td>
                               {colunasFornecedores.map(fornId => {
                                 const conc = concorrencias.find(c => c.orcamento_item_id === item.id && c.fornecedor_id === fornId) || {};
                                 return (
-                                  <td key={fornId} className={`p-4 border-r align-top transition-colors ${conc.is_vencedor ? 'bg-emerald-500/10' : 'bg-background'}`}>
+                                  <td key={fornId} className={`p-4 border-r border-border align-top transition-colors ${conc.is_vencedor ? 'bg-emerald-500/10' : 'bg-card'}`}>
                                     <div className="space-y-3">
                                       <div>
                                         <Label className="text-[10px] text-muted-foreground uppercase font-bold">Custo Total (R$)</Label>
-                                        <Input type="number" className="h-8 font-semibold" value={conc.valor_total_custo || ""} onChange={e => updateConcorrenciaLocal(item.id, fornId, 'valor_total_custo', Number(e.target.value))} disabled={isLocked} placeholder="0.00" />
+                                        <Input type="number" className="h-8 font-semibold bg-background border-input" value={conc.valor_total_custo || ""} onChange={e => updateConcorrenciaBD(item.id, fornId, 'valor_total_custo', e.target.value)} disabled={isLocked} placeholder="0.00" />
                                       </div>
                                       <div className="grid grid-cols-2 gap-2">
                                         <div>
                                           <Label className="text-[10px] text-muted-foreground uppercase font-bold">Nº Proposta</Label>
-                                          <Input className="h-8 text-xs" value={conc.numero_proposta_fornecedor || ""} onChange={e => updateConcorrenciaLocal(item.id, fornId, 'numero_proposta_fornecedor', e.target.value)} disabled={isLocked} />
+                                          <Input className="h-8 text-xs bg-background border-input" value={conc.numero_proposta_fornecedor || ""} onChange={e => updateConcorrenciaBD(item.id, fornId, 'numero_proposta_fornecedor', e.target.value)} disabled={isLocked} />
                                         </div>
                                         <div>
                                           <Label className="text-[10px] text-muted-foreground uppercase font-bold">Comissão (R$)</Label>
-                                          <Input type="number" className="h-8 text-xs" value={conc.comissao_valor || ""} onChange={e => updateConcorrenciaLocal(item.id, fornId, 'comissao_valor', Number(e.target.value))} disabled={isLocked} />
+                                          <Input type="number" className="h-8 text-xs bg-background border-input" value={conc.comissao_valor || ""} onChange={e => updateConcorrenciaBD(item.id, fornId, 'comissao_valor', e.target.value)} disabled={isLocked} />
                                         </div>
                                       </div>
-                                      <Button onClick={() => handleDefinirVencedor(item.id, fornId)} size="sm" variant={conc.is_vencedor ? "default" : "outline"} className={`w-full h-8 text-xs font-bold ${conc.is_vencedor ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700' : 'text-foreground hover:bg-muted'}`} disabled={isLocked}>
+                                      <Button size="sm" variant={conc.is_vencedor ? "default" : "outline"} className={`w-full h-8 text-xs font-bold ${conc.is_vencedor ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}`} onClick={() => handleDefinirVencedor(item.id, fornId)} disabled={isLocked}>
                                         {conc.is_vencedor ? "✓ Vencedor Atual" : "Definir Vencedor"}
                                       </Button>
                                     </div>
