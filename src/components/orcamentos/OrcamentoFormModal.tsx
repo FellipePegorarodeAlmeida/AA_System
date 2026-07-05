@@ -97,6 +97,7 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
   // --- ABERTURA DO MODAL ---
   useEffect(() => {
     if (open) {
+      setActiveTab("header");
       if (editing) {
         setSavedId(editing.id);
         carregarOrcamentoCompleto(editing);
@@ -107,7 +108,6 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
         setConcorrencias([]);
         setColunasFornecedores([]);
         setFechamento(null);
-        setActiveTab("header");
       }
     }
   }, [open, editing]);
@@ -145,8 +145,6 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
 
     const { data: fechData } = await supabase.from("orcamento_fechamento").select("*").eq("orcamento_id", orc.id).maybeSingle();
     setFechamento(fechData);
-    
-    setActiveTab("header");
   }
 
   async function carregarDependenciasCliente(clienteId: string, setDefaults: boolean = false) {
@@ -351,6 +349,44 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
       if (data) {
         setConcorrencias(prev => prev.map(c => (c.orcamento_item_id === itemId && c.fornecedor_id === fornId) ? data : c));
       }
+    }
+  }
+
+  async function handleAddFornecedorConcorrencia(fornId: string) {
+    if (colunasFornecedores.includes(fornId) || isLocked) return;
+    
+    setColunasFornecedores(prev => [...prev, fornId]);
+    setExibirClienteMap(prev => ({ ...prev, [fornId]: true }));
+
+    const inserts = itens.map(item => ({
+      orcamento_item_id: item.id,
+      fornecedor_id: fornId,
+      valor_total_custo: 0,
+      comissao_valor: 0,
+      numero_proposta_fornecedor: "",
+      is_vencedor: false
+    }));
+
+    if (inserts.length > 0) {
+      const { data } = await supabase.from("orcamento_concorrencias").insert(inserts).select();
+      if (data) {
+        setConcorrencias(prev => [...prev, ...data]);
+      }
+    }
+  }
+
+  async function handleRemoverFornecedorConcorrencia(fornId: string) {
+    if (isLocked) return;
+    
+    setColunasFornecedores(prev => prev.filter(id => id !== fornId));
+    setConcorrencias(prev => prev.filter(c => c.fornecedor_id !== fornId));
+
+    const itemIds = itens.map(item => item.id);
+    if (itemIds.length > 0) {
+      await supabase.from("orcamento_concorrencias")
+        .delete()
+        .in("orcamento_item_id", itemIds)
+        .eq("fornecedor_id", fornId);
     }
   }
 
@@ -959,12 +995,7 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                       <p className="text-xs text-muted-foreground">Adicione gráficas e compare valores totais. Modificações salvam automaticamente.</p>
                     </div>
                     {!isLocked && (
-                      <Select onValueChange={(val) => {
-                        if (!colunasFornecedores.includes(val)) {
-                          setColunasFornecedores([...colunasFornecedores, val]);
-                          setExibirClienteMap(prev => ({ ...prev, [val]: true }));
-                        }
-                      }}>
+                      <Select onValueChange={(val) => handleAddFornecedorConcorrencia(val)}>
                         <SelectTrigger className="w-[280px] bg-background border-input"><SelectValue placeholder="Adicionar Gráfica à Matriz" /></SelectTrigger>
                         <SelectContent>
                           {fornecedores.map(f => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
@@ -998,7 +1029,7 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                                     <Label htmlFor={`show-cli-${fornId}`} className="text-[9px] cursor-pointer whitespace-nowrap uppercase font-bold text-muted-foreground">Exibir Cliente</Label>
                                   </div>
                                   {!isLocked && (
-                                    <button onClick={() => setColunasFornecedores(prev => prev.filter(id => id !== fornId))} className="mt-1 text-destructive hover:underline font-normal normal-case text-[10px] block mx-auto">remover</button>
+                                    <button onClick={() => handleRemoverFornecedorConcorrencia(fornId)} className="mt-1 text-destructive hover:underline font-normal normal-case text-[10px] block mx-auto">remover</button>
                                   )}
                                 </th>
                               );
