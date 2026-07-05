@@ -491,16 +491,30 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
           await supabase.from("orcamento_fechamento").insert(fechPayload);
         }
         
-        // Salvar matriz de concorrências
+        // Salvar matriz de concorrências (Refatorado e Blindado)
         const itemIdsToSave = itens.map(i => i.id);
         if (itemIdsToSave.length > 0) {
-          await supabase.from("orcamento_concorrencias").delete().in("orcamento_item_id", itemIdsToSave);
-          if (concorrencias.length > 0) {
-            const concsToInsert = concorrencias.map(c => {
-              const { id, created_at, updated_at, ...rest } = c; // remove lixos de front
-              return rest;
-            });
-            await supabase.from("orcamento_concorrencias").insert(concsToInsert);
+          // 1. Limpa o terreno (Trata erro silencioso)
+          const { error: delErr } = await supabase.from("orcamento_concorrencias").delete().in("orcamento_item_id", itemIdsToSave);
+          if (delErr) console.error("Falha ao limpar concorrências antigas:", delErr);
+  
+          // 2. Filtra apenas os válidos e prepara a inserção
+          const validConcs = concorrencias.filter(c => c.fornecedor_id && c.orcamento_item_id);
+          if (validConcs.length > 0) {
+            const concsToInsert = validConcs.map(c => ({
+              orcamento_item_id: c.orcamento_item_id,
+              fornecedor_id: c.fornecedor_id,
+              numero_proposta_fornecedor: c.numero_proposta_fornecedor || null,
+              valor_total_custo: Number(c.valor_total_custo) || 0,
+              comissao_valor: Number(c.comissao_valor) || 0,
+              is_vencedor: c.is_vencedor || false
+            }));
+            
+            const { error: insErr } = await supabase.from("orcamento_concorrencias").insert(concsToInsert);
+            if (insErr) {
+              console.error("Falha ao gravar matriz:", insErr);
+              toast({ title: "Erro na Matriz", description: "Ocorreu um erro ao salvar a concorrência.", variant: "destructive" });
+            }
           }
         }
 
@@ -990,32 +1004,44 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                         <tbody className="divide-y">
                           {itens.map((item: any) => (
                             <tr key={item.id} className="hover:bg-muted/30">
-                              <td className="p-4 border-r align-top bg-white/50 min-w-[250px]">
-                                <p className="font-bold text-gray-900 leading-tight">{item.descricao}</p>
+                              <td className="p-4 border-r align-top bg-background min-w-[250px]">
+                                <p className="font-bold text-foreground leading-tight">{item.descricao}</p>
                                 
-                                {/* Resumo Técnico */}
-                                <div className="mt-2 space-y-0.5 text-[10px] text-muted-foreground leading-tight">
+                                {/* Resumo Técnico (Lê raiz e JSONB) */}
+                                <div className="mt-3 space-y-1 text-[10px] text-muted-foreground leading-tight">
+                                  {item.especificacao_tecnica?.grupo_kit && (
+                                    <span className="bg-indigo-500/10 text-indigo-500 px-1.5 py-0.5 rounded uppercase font-bold text-[9px] mb-1 inline-block">
+                                      Kit: {item.especificacao_tecnica.grupo_kit}
+                                    </span>
+                                  )}
+                                  
                                   {(Number(item.largura_mm) > 0 && Number(item.altura_mm) > 0) ? (
-                                    <p><span className="font-semibold uppercase text-gray-500">Formato:</span> {item.largura_mm}x{item.altura_mm}mm</p>
+                                    <p><span className="font-semibold uppercase text-foreground/70">Formato:</span> {item.largura_mm}x{item.altura_mm}mm</p>
                                   ) : item.formato ? (
-                                    <p><span className="font-semibold uppercase text-gray-500">Formato:</span> {item.formato}</p>
+                                    <p><span className="font-semibold uppercase text-foreground/70">Formato:</span> {item.formato}</p>
                                   ) : null}
-                                  {item.substrato && <p><span className="font-semibold uppercase text-gray-500">Papel:</span> {item.substrato}</p>}
-                                  {item.acabamentos && <p className="line-clamp-3" title={item.acabamentos}><span className="font-semibold uppercase text-gray-500">Acab.:</span> {item.acabamentos}</p>}
+                                  
+                                  {item.substrato && <p><span className="font-semibold uppercase text-foreground/70">Papel:</span> {item.substrato}</p>}
+                                  
+                                  {/* Extrato rico do JSONB (Editorial) */}
+                                  {item.especificacao_tecnica?.capa?.tipo && (
+                                    <p><span className="font-semibold uppercase text-foreground/70">Capa:</span> {item.especificacao_tecnica.capa.tipo} - {item.especificacao_tecnica.capa.papel}</p>
+                                  )}
+                                  {item.especificacao_tecnica?.miolo?.papel && (
+                                    <p><span className="font-semibold uppercase text-foreground/70">Miolo:</span> {item.especificacao_tecnica.miolo.papel} {item.especificacao_tecnica.miolo.gramatura}g ({item.especificacao_tecnica.miolo.paginas} pág)</p>
+                                  )}
+                                  
+                                  {item.acabamentos && <p className="line-clamp-3" title={item.acabamentos}><span className="font-semibold uppercase text-foreground/70">Acab.:</span> {item.acabamentos}</p>}
                                 </div>
                                 
-                                {/* Valores */}
-                                <div className="mt-3 pt-2 border-t border-gray-100">
-                                  <p className="text-xs font-medium text-gray-600">Qtd: {item.quantidade} {item.quantidade_unidade}(s)</p>
-                                  <p className="text-xs font-bold text-emerald-700 mt-0.5">
-                                    Venda: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.total || 0)}
-                                  </p>
+                                <div className="mt-4 pt-3 border-t border-border">
+                                  <p className="text-xs font-medium text-foreground">Qtd: {item.quantidade} {item.quantidade_unidade}(s)</p>
                                 </div>
                               </td>
                               {colunasFornecedores.map(fornId => {
                                 const conc = concorrencias.find(c => c.orcamento_item_id === item.id && c.fornecedor_id === fornId) || {};
                                 return (
-                                  <td key={fornId} className={`p-4 border-r align-top transition-colors ${conc.is_vencedor ? 'bg-emerald-500/10' : ''}`}>
+                                  <td key={fornId} className={`p-4 border-r align-top transition-colors ${conc.is_vencedor ? 'bg-emerald-500/10' : 'bg-background'}`}>
                                     <div className="space-y-3">
                                       <div>
                                         <Label className="text-[10px] text-muted-foreground uppercase font-bold">Custo Total (R$)</Label>
