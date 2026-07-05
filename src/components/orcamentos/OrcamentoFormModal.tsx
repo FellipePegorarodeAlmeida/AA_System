@@ -333,8 +333,8 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
   function handleImprimirSolicitacao(fornId: string) {
     if (!savedId) return toast({ title: "Atenção", description: "Salve o orçamento primeiro." });
     const showClient = exibirClienteMap[fornId] !== false; // Se for undef/true, é true
-    const url = `/orcamentos/${savedId}/solicitacao?fornecedor=${fornId}&showClient=${showClient}`;
-    window.open(url, '_blank');
+    // Removemos o window.open e usamos navigate para não perder a sessão
+    navigate(`/orcamentos/${savedId}/solicitacao?fornecedor=${fornId}&showClient=${showClient}`);
   }
 
   async function updateSharedSpec(cenario_id: string, field: string, value: any) {
@@ -990,10 +990,27 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                         <tbody className="divide-y">
                           {itens.map((item: any) => (
                             <tr key={item.id} className="hover:bg-muted/30">
-                              <td className="p-4 border-r align-top bg-muted/10">
-                                <p className="font-bold text-foreground">{item.descricao}</p>
-                                <p className="text-xs text-muted-foreground mt-1">Qtd: {item.quantidade} {item.quantidade_unidade}(s)</p>
-                                <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mt-2">Venda Atual: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.total || 0)}</p>
+                              <td className="p-4 border-r align-top bg-white/50 min-w-[250px]">
+                                <p className="font-bold text-gray-900 leading-tight">{item.descricao}</p>
+                                
+                                {/* Resumo Técnico */}
+                                <div className="mt-2 space-y-0.5 text-[10px] text-muted-foreground leading-tight">
+                                  {(Number(item.largura_mm) > 0 && Number(item.altura_mm) > 0) ? (
+                                    <p><span className="font-semibold uppercase text-gray-500">Formato:</span> {item.largura_mm}x{item.altura_mm}mm</p>
+                                  ) : item.formato ? (
+                                    <p><span className="font-semibold uppercase text-gray-500">Formato:</span> {item.formato}</p>
+                                  ) : null}
+                                  {item.substrato && <p><span className="font-semibold uppercase text-gray-500">Papel:</span> {item.substrato}</p>}
+                                  {item.acabamentos && <p className="line-clamp-3" title={item.acabamentos}><span className="font-semibold uppercase text-gray-500">Acab.:</span> {item.acabamentos}</p>}
+                                </div>
+                                
+                                {/* Valores */}
+                                <div className="mt-3 pt-2 border-t border-gray-100">
+                                  <p className="text-xs font-medium text-gray-600">Qtd: {item.quantidade} {item.quantidade_unidade}(s)</p>
+                                  <p className="text-xs font-bold text-emerald-700 mt-0.5">
+                                    Venda: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.total || 0)}
+                                  </p>
+                                </div>
                               </td>
                               {colunasFornecedores.map(fornId => {
                                 const conc = concorrencias.find(c => c.orcamento_item_id === item.id && c.fornecedor_id === fornId) || {};

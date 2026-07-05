@@ -49,7 +49,10 @@ export default function SolicitacaoPrintPage() {
     <div className="bg-white text-black min-h-screen font-sans p-8 print:p-0 print:m-0 w-full max-w-4xl mx-auto relative">
       {/* Botões de Ação (Escondidos na Impressão) */}
       <div className="print:hidden absolute top-4 left-4 flex gap-2">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 bg-gray-100 px-3 py-1.5 rounded-md">
+        <button 
+          onClick={() => navigate(`/orcamentos?id=${id}`)} 
+          className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-md transition-colors"
+        >
           <ArrowLeft className="h-4 w-4" /> Voltar
         </button>
         <button onClick={() => window.print()} className="flex items-center gap-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-md shadow-sm">
