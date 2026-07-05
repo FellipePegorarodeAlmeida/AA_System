@@ -28,6 +28,7 @@ import PlaceholderPage from "./pages/PlaceholderPage";
 import ContasReceberPage from "./pages/ContasReceberPage";
 import PedidoPrintPage from "./pages/PedidoPrintPage";
 import OrcamentoPrintPage from "./pages/OrcamentoPrintPage";
+import SolicitacaoPrintPage from "@/pages/orcamentos/SolicitacaoPrintPage";
 import NotasFiscaisPage from "./pages/NotasFiscaisPage";
 import DashboardComercialPage from "./pages/DashboardComercialPage";
 import NotFound from "./pages/NotFound.tsx";
@@ -46,6 +47,7 @@ const App = () => (
           <Route path="/login" element={<LoginPage />} />
           <Route path="/pedidos/:id/imprimir" element={<AuthGuard><PedidoPrintPage /></AuthGuard>} />
           <Route path="/orcamentos/:id/confirmacao" element={<AuthGuard><OrcamentoPrintPage /></AuthGuard>} />
+          <Route path="/orcamentos/:id/solicitacao" element={<AuthGuard><SolicitacaoPrintPage /></AuthGuard>} />
           <Route element={<AuthGuard><AppShell /></AuthGuard>}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/clientes" element={<ClientesPage />} />
