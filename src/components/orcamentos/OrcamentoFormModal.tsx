@@ -63,6 +63,7 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
   const [itens, setItens] = useState<any[]>([]);
   const [concorrencias, setConcorrencias] = useState<any[]>([]);
   const [colunasFornecedores, setColunasFornecedores] = useState<string[]>([]);
+  const [exibirClienteSolicitacao, setExibirClienteSolicitacao] = useState(true);
   const [fechamento, setFechamento] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("header");
   const [saving, setSaving] = useState(false);
@@ -327,6 +328,16 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
     await updateItemBD(itemId, "fornecedor_valor_total", conc.valor_total_custo);
     
     toast({ title: "Vencedor aplicado", description: "O custo foi transferido para o item." });
+  }
+
+  function handleImprimirSolicitacao(fornId: string) {
+    if (!savedId) {
+      toast({ title: "Atenção", description: "Salve o orçamento primeiro para gerar o documento." });
+      return;
+    }
+    // Abre a nova rota de impressão em uma nova aba
+    const url = `/orcamentos/${savedId}/solicitacao?fornecedor=${fornId}&showClient=${exibirClienteSolicitacao}`;
+    window.open(url, '_blank');
   }
 
   async function updateSharedSpec(cenario_id: string, field: string, value: any) {
@@ -917,11 +928,21 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                       <p className="text-xs text-muted-foreground">Adicione gráficas e compare valores totais. A escolha sobrepõe o custo do item.</p>
                     </div>
                     {!isLocked && (
-                      <div className="flex gap-2">
+                      <div className="flex flex-col items-end gap-3">
+                        <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-md border">
+                          <Checkbox 
+                            id="exibir-cliente" 
+                            checked={exibirClienteSolicitacao} 
+                            onCheckedChange={(v) => setExibirClienteSolicitacao(!!v)} 
+                          />
+                          <Label htmlFor="exibir-cliente" className="text-xs font-medium cursor-pointer">
+                            Exibir Cliente na Solicitação
+                          </Label>
+                        </div>
                         <Select onValueChange={(val) => {
                           if (!colunasFornecedores.includes(val)) setColunasFornecedores([...colunasFornecedores, val]);
                         }}>
-                          <SelectTrigger className="w-[280px]"><SelectValue placeholder="Adicionar Gráfica à Matriz" /></SelectTrigger>
+                          <SelectTrigger className="w-[280px] bg-background"><SelectValue placeholder="Adicionar Gráfica à Matriz" /></SelectTrigger>
                           <SelectContent>
                             {fornecedores.map(f => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
                           </SelectContent>
@@ -944,9 +965,20 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                               const forn = fornecedores.find(f => f.id === fornId);
                               return (
                                 <th key={fornId} className="px-4 py-3 min-w-[280px] border-r border-b text-center bg-muted/60">
-                                  {forn?.nome || "Fornecedor"}
+                                  <div className="flex items-center justify-center gap-2">
+                                    <span className="font-bold">{forn?.nome || "Fornecedor"}</span>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-100" 
+                                      onClick={() => handleImprimirSolicitacao(fornId)}
+                                      title="Gerar Solicitação em PDF"
+                                    >
+                                      <Printer className="h-4 w-4" />
+                                    </Button>
+                                  </div>
                                   {!isLocked && (
-                                    <button onClick={() => setColunasFornecedores(prev => prev.filter(id => id !== fornId))} className="ml-2 text-red-500 hover:text-red-700 font-normal normal-case text-[10px] underline">
+                                    <button onClick={() => setColunasFornecedores(prev => prev.filter(id => id !== fornId))} className="mt-1 text-red-500 hover:text-red-700 font-normal normal-case text-[10px] underline block mx-auto">
                                       remover
                                     </button>
                                   )}
