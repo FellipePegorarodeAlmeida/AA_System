@@ -63,7 +63,7 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
   const [itens, setItens] = useState<any[]>([]);
   const [concorrencias, setConcorrencias] = useState<any[]>([]);
   const [colunasFornecedores, setColunasFornecedores] = useState<string[]>([]);
-  const [exibirClienteSolicitacao, setExibirClienteSolicitacao] = useState(true);
+  const [exibirClienteMap, setExibirClienteMap] = useState<Record<string, boolean>>({});
   const [fechamento, setFechamento] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("header");
   const [saving, setSaving] = useState(false);
@@ -331,12 +331,9 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
   }
 
   function handleImprimirSolicitacao(fornId: string) {
-    if (!savedId) {
-      toast({ title: "Atenção", description: "Salve o orçamento primeiro para gerar o documento." });
-      return;
-    }
-    // Abre a nova rota de impressão em uma nova aba
-    const url = `/orcamentos/${savedId}/solicitacao?fornecedor=${fornId}&showClient=${exibirClienteSolicitacao}`;
+    if (!savedId) return toast({ title: "Atenção", description: "Salve o orçamento primeiro." });
+    const showClient = exibirClienteMap[fornId] !== false; // Se for undef/true, é true
+    const url = `/orcamentos/${savedId}/solicitacao?fornecedor=${fornId}&showClient=${showClient}`;
     window.open(url, '_blank');
   }
 
@@ -928,19 +925,12 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                       <p className="text-xs text-muted-foreground">Adicione gráficas e compare valores totais. A escolha sobrepõe o custo do item.</p>
                     </div>
                     {!isLocked && (
-                      <div className="flex flex-col items-end gap-3">
-                        <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-md border">
-                          <Checkbox 
-                            id="exibir-cliente" 
-                            checked={exibirClienteSolicitacao} 
-                            onCheckedChange={(v) => setExibirClienteSolicitacao(!!v)} 
-                          />
-                          <Label htmlFor="exibir-cliente" className="text-xs font-medium cursor-pointer">
-                            Exibir Cliente na Solicitação
-                          </Label>
-                        </div>
+                      <div className="flex gap-2">
                         <Select onValueChange={(val) => {
-                          if (!colunasFornecedores.includes(val)) setColunasFornecedores([...colunasFornecedores, val]);
+                          if (!colunasFornecedores.includes(val)) {
+                            setColunasFornecedores([...colunasFornecedores, val]);
+                            setExibirClienteMap(prev => ({ ...prev, [val]: true })); // Default: mostra cliente
+                          }
                         }}>
                           <SelectTrigger className="w-[280px] bg-background"><SelectValue placeholder="Adicionar Gráfica à Matriz" /></SelectTrigger>
                           <SelectContent>
@@ -956,7 +946,7 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                       Nenhuma gráfica adicionada à concorrência. Selecione um fornecedor acima para iniciar.
                     </div>
                   ) : (
-                    <div className="border rounded-lg overflow-x-auto flex-1 bg-card">
+                    <div className="border rounded-lg overflow-auto max-h-[55vh] flex-1 shadow-inner bg-muted/10">
                       <table className="w-full text-sm text-left">
                         <thead className="bg-muted/60 text-xs uppercase font-semibold text-muted-foreground sticky top-0 z-10">
                           <tr>
@@ -982,6 +972,16 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                                       remover
                                     </button>
                                   )}
+                                  <div className="flex items-center justify-center gap-1.5 mt-2 bg-white/50 py-1 px-2 rounded border border-gray-200 w-fit mx-auto">
+                                    <Checkbox 
+                                      id={`show-cli-${fornId}`}
+                                      checked={exibirClienteMap[fornId] !== false}
+                                      onCheckedChange={(v) => setExibirClienteMap(prev => ({ ...prev, [fornId]: !!v }))}
+                                    />
+                                    <Label htmlFor={`show-cli-${fornId}`} className="text-[9px] cursor-pointer whitespace-nowrap uppercase font-bold text-gray-600">
+                                      Exibir Cliente
+                                    </Label>
+                                  </div>
                                 </th>
                               );
                             })}
