@@ -9,34 +9,60 @@ export default function SolicitacaoPrintPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const fornecedorId = searchParams.get("fornecedor");
+  const proveedorId = searchParams.get("fornecedor");
   const showClient = searchParams.get("showClient") === "true";
 
   const [orcamento, setOrcamento] = useState<any>(null);
-  const [produtosGrouped, setProdutosGrouped] = useState<any[]>([]);
+  const [itens, setItens] = useState<any[]>([]);
   const [fornecedorDestino, setFornecedorDestino] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const buildSpecsString = (item: any) => {
+    const s = item.especificacao_tecnica || item.specs || {};
+    if (Object.keys(s).length === 0 || !s.capa) {
+      return [
+        item.formato ? `Formato: ${item.formato}` : (item.largura_mm ? `Formato: ${item.largura_mm}x${item.altura_mm}mm` : null),
+        item.substrato ? `Substrato: ${item.substrato}` : null,
+        item.acabamentos ? `Acabamentos: ${item.acabamentos}` : null
+      ].filter(Boolean).join(" | ");
+    }
+    const parts = [];
+    if (s.tipo_obra) parts.push(`Obra: ${s.tipo_obra}`);
+    if (s.regra_encadernacao) {
+      let enc = `Encadernação: ${s.regra_encadernacao}`;
+      if (s.regra_encadernacao === 'Espiral') enc += ` ${s.espiral_material || ''} (${s.espiral_cor || ''})`;
+      if (s.regra_encadernacao === 'Wire-O' && s.wireo_cor) enc += ` (${s.wireo_cor})`;
+      parts.push(enc.trim());
+    }
+    if (s.capa) {
+      let c = `Capa: ${s.capa.papel} ${s.capa.gramatura}`;
+      c += ` (${s.capa.cores || 's/ cor'}${s.capa.usa_pantone && s.capa.pantone_cor ? ' + Pantone ' + s.capa.pantone_cor : ''})`;
+      if (s.capa.capa_dura) c += ` - Capa Dura (${s.capa.espessura_papelao})`;
+      const acabsCapa = [s.capa.acabamento_1, s.capa.acabamento_2, s.capa.acabamento_3].filter((a: any) => a && a !== 'Nenhum');
+      if (acabsCapa.length > 0) c += ` [${acabsCapa.join(', ')}]`;
+      parts.push(c);
+    }
+    if (s.miolos && Array.isArray(s.miolos)) {
+      s.miolos.forEach((m: any, idx: number) => {
+        let mStr = `Miolo ${idx + 1}: ${m.paginas || 0} pgs - ${m.papel} ${m.gramatura}`;
+        mStr += ` (${m.cores || 's/ cor'}${m.usa_pantone && m.pantone_cor ? ' + Pantone ' + m.pantone_cor : ''})`;
+        const acabsMiolo = [m.acabamento_1, m.acabamento_2].filter((a: any) => a && a !== 'Nenhum');
+        if (acabsMiolo.length > 0) mStr += ` [${acabsMiolo.join(', ')}]`;
+        parts.push(mStr);
+      });
+    }
+    return parts.join(" | ");
+  };
+
   useEffect(() => {
     async function load() {
-      if (!id || !fornecedorId) return;
+      if (!id || !proveedorId) return;
       try {
-        const dados = await orcamentoService.getOrcamentoParaImpressao(id);
-        setOrcamento(dados.orcamento);
-        
-        // Agrupa os itens pela lógica de Cenario (Kits / Opções / SKUs)
-        const produtos = (dados.itens || []).reduce((acc: any[], item: any) => {
-          let grupo = acc.find(g => g.cenario_id === item.cenario_id);
-          if (!grupo) {
-            grupo = { cenario_id: item.cenario_id, nome_opcao: item.nome_opcao || "Produto", specs: item, linhas: [] };
-            acc.push(grupo);
-          }
-          grupo.linhas.push(item);
-          return acc;
-        }, []);
-        setProdutosGrouped(produtos);
+        const result = await orcamentoService.getOrcamentoParaImpressao(id);
+        setOrcamento(result.orcamento);
+        setItens(result.itens);
 
-        const { data: fornData } = await supabase.from('fornecedores').select('*').eq('id', fornecedorId).single();
+        const { data: fornData } = await supabase.from('fornecedores').select('*').eq('id', proveedorId).single();
         setFornecedorDestino(fornData);
       } catch (err) {
         console.error(err);
@@ -45,13 +71,36 @@ export default function SolicitacaoPrintPage() {
       }
     }
     load();
-  }, [id, fornecedorId]);
+  }, [id, proveedorId]);
 
-  if (loading) return <div className="p-10 text-center">Carregando solicitação...</div>;
-  if (!orcamento || !fornecedorDestino) return <div className="p-10 text-center">Dados inválidos.</div>;
+  if (loading) return <div className="p-8 text-center text-muted-foreground print:hidden">Gerando Solicitação de Cotação...</div>;
+  if (!orcamento || !fornecedorDestino) return <div className="p-8 text-center">Erro ao processar dados.</div>;
+
+  // MOTOR DE BLOCOS IGUAL À PROPOSTA (KITS / SKUS / ESPECIFICAÇÕES)
+  const groupedBlocks: any[] = [];
+  itens.forEach(it => {
+    const s = it.especificacao_tecnica || it.specs || {};
+    const isKit = !!s.grupo_kit;
+    const isSku = s.tipo_variacao_opcoes === 'sku';
+    const blockName = isKit ? s.grupo_kit : it.descricao;
+    const specsStr = buildSpecsString(it);
+    const blockId = isKit ? `KIT_${s.grupo_kit}` : (isSku ? `SKU_${it.id}` : `AVULSO_${it.descricao}_${specsStr}`);
+
+    let block = groupedBlocks.find(b => b.blockId === blockId);
+    if (!block) {
+      block = { blockId, isKit, name: blockName, components: [], quantities: [] };
+      groupedBlocks.push(block);
+    }
+    if (!block.components.find((c: any) => c.specsStr === specsStr)) {
+      block.components.push({ descricao: it.descricao, specsStr, prazo: it.prazo_estimado });
+    }
+    if (!block.quantities.includes(it.quantidade)) {
+      block.quantities.push(it.quantidade);
+    }
+  });
 
   return (
-    <div className="bg-white text-black min-h-screen font-sans p-8 print:p-0 print:m-0 w-full max-w-4xl mx-auto relative">
+    <div className="bg-white text-black min-h-screen font-sans p-10 print:p-0 print:m-0 w-full max-w-4xl mx-auto relative">
       <div className="print:hidden absolute top-4 left-4 flex gap-2">
         <button onClick={() => navigate(`/orcamentos?id=${id}`)} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-md transition-colors">
           <ArrowLeft className="h-4 w-4" /> Voltar
@@ -61,101 +110,77 @@ export default function SolicitacaoPrintPage() {
         </button>
       </div>
 
-      <div className="border-b-2 border-black pb-4 mb-6 pt-12 print:pt-0">
-        <div className="flex justify-between items-end">
-          <div>
-            <h1 className="text-2xl font-black uppercase tracking-tighter">Solicitação de Orçamento</h1>
-            <p className="text-sm font-medium mt-1">Ref: ORC-{new Date(orcamento.created_at).getFullYear()}-{orcamento.numero}</p>
-          </div>
-          <div className="text-right text-sm">
-            <p><strong>Data:</strong> {new Date().toLocaleDateString('pt-BR')}</p>
-            <p><strong>Solicitante:</strong> AA Representação</p>
-          </div>
+      <div className="border-b-2 border-black pb-4 mb-6 pt-12 print:pt-0 flex justify-between items-end">
+        <div>
+          <h1 className="text-2xl font-black uppercase tracking-tighter">Solicitação de Orçamento</h1>
+          <p className="text-sm font-medium mt-1 text-gray-600">Ref: ORC-{new Date(orcamento.created_at).getFullYear()}-{orcamento.numero}</p>
+        </div>
+        <div className="text-right text-sm">
+          <p><strong>Emissão:</strong> {new Date().toLocaleDateString('pt-BR')}</p>
+          <p><strong>Remetente:</strong> AA Representação</p>
         </div>
       </div>
 
-      <div className="p-4 border border-black rounded-lg bg-gray-50/50 print:bg-transparent mb-8">
-        <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">À Gráfica / Fornecedor</h2>
-        <p className="font-bold text-lg leading-tight uppercase">{fornecedorDestino.nome}</p>
-        {showClient && orcamento.cliente && (
-          <div className="mt-4 pt-3 border-t border-gray-300">
-            <h3 className="text-[10px] font-bold uppercase text-gray-500 mb-1">Cliente Final (Referência)</h3>
-            <p className="text-sm font-bold uppercase">{orcamento.cliente.nome}</p>
+      <div className="p-4 border border-black rounded-lg mb-6 bg-gray-50">
+        <h2 className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Destinatário (Fornecedor)</h2>
+        <p className="font-bold text-base uppercase">{fornecedorDestino.nome}</p>
+        {showClient && orcamento.cliente?.nome && (
+          <div className="mt-3 pt-2 border-t border-gray-200">
+            <h3 className="text-[10px] font-bold uppercase text-gray-500 mb-0.5">Referência de Projeto</h3>
+            <p className="text-xs font-bold uppercase text-gray-700">{orcamento.cliente.nome} {orcamento.titulo ? `| ${orcamento.titulo}` : ''}</p>
           </div>
         )}
       </div>
 
-      <p className="text-sm font-medium mb-6 italic">Favor enviar proposta comercial com os melhores custos para a produção das opções abaixo:</p>
+      <p className="text-sm font-medium mb-6 italic text-gray-700">Favor enviar proposta comercial com os melhores custos industriais para as seguintes especificações:</p>
 
-      <div className="space-y-8">
-        {produtosGrouped.map((grupo, index) => {
-          const itemBase = grupo.specs;
-          const jsonb = itemBase.especificacao_tecnica || {};
-          const isKit = !!jsonb.grupo_kit;
-          const largura = Number(itemBase.largura_mm) || 0;
-          const altura = Number(itemBase.altura_mm) || 0;
-
-          return (
-            <div key={grupo.cenario_id} className="border-2 border-gray-400 rounded-lg overflow-hidden break-inside-avoid">
-              {/* HEADER DO PRODUTO */}
-              <div className="bg-gray-100 border-b border-gray-400 p-3">
-                {isKit && <span className="bg-black text-white px-2 py-0.5 text-[10px] font-bold uppercase rounded mr-2">Kit: {jsonb.grupo_kit}</span>}
-                <span className="font-black text-lg uppercase">{grupo.nome_opcao}</span>
-              </div>
-
-              {/* ESPECIFICAÇÕES TÉCNICAS (Com extração rica) */}
-              <div className="p-4 text-sm space-y-3">
-                <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-                  {(largura > 0 && altura > 0) ? (
-                    <div className="col-span-2"><span className="font-bold text-gray-500 uppercase text-[10px] block">Formato / Dimensões</span>{largura} x {altura} mm</div>
-                  ) : itemBase.formato && (
-                    <div className="col-span-2"><span className="font-bold text-gray-500 uppercase text-[10px] block">Formato</span>{itemBase.formato}</div>
-                  )}
-                  
-                  {itemBase.substrato && <div><span className="font-bold text-gray-500 uppercase text-[10px] block">Substrato Base</span>{itemBase.substrato}</div>}
-                  {itemBase.prazo_estimado && <div><span className="font-bold text-gray-500 uppercase text-[10px] block">Prazo Estimado</span>{itemBase.prazo_estimado}</div>}
-                  
-                  {jsonb.capa?.tipo && <div><span className="font-bold text-gray-500 uppercase text-[10px] block">Capa</span>{jsonb.capa.tipo} - {jsonb.capa.papel}</div>}
-                  {jsonb.miolo?.papel && <div><span className="font-bold text-gray-500 uppercase text-[10px] block">Miolo</span>{jsonb.miolo.papel} {jsonb.miolo.gramatura}g ({jsonb.miolo.paginas} páginas)</div>}
-                </div>
-
-                {itemBase.acabamentos && (
-                  <div className="pt-2 border-t border-dashed border-gray-300">
-                    <span className="font-bold text-gray-500 uppercase text-[10px] block mb-1">Acabamentos Especiais / Observações</span>
-                    <p className="whitespace-pre-wrap">{itemBase.acabamentos}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* GRADE DE QUANTIDADES PARA A GRÁFICA PREENCHER */}
-              <table className="w-full text-sm border-t border-gray-400">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="py-2 px-4 text-left font-bold text-xs uppercase text-gray-600 border-b border-gray-300">Variação / SKU</th>
-                    <th className="py-2 px-4 text-center font-bold text-xs uppercase text-gray-600 border-b border-gray-300 border-l">Quantidade</th>
-                    <th className="py-2 px-4 text-right font-bold text-xs uppercase text-gray-600 border-b border-gray-300 border-l w-32">Custo Unitário</th>
-                    <th className="py-2 px-4 text-right font-bold text-xs uppercase text-gray-600 border-b border-gray-300 border-l w-32">Custo Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {grupo.linhas.map((linha: any) => (
-                    <tr key={linha.id} className="border-b border-gray-200 last:border-0">
-                      <td className="py-2 px-4 font-medium">{linha.descricao}</td>
-                      <td className="py-2 px-4 text-center font-bold border-l border-gray-200 bg-gray-50/50">{linha.quantidade} {linha.quantidade_unidade}</td>
-                      <td className="py-2 px-4 border-l border-gray-200 text-right"></td>
-                      <td className="py-2 px-4 border-l border-gray-200 text-right"></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      <div className="space-y-6">
+        {groupedBlocks.map((block, index) => (
+          <div key={block.blockId} className="border-2 border-black rounded-lg overflow-hidden page-break-inside-avoid">
+            <div className="bg-gray-100 px-4 py-2 border-b-2 border-black">
+              <h2 className="text-sm font-black uppercase text-gray-900 tracking-widest">
+                {block.isKit ? `📦 COMPOSIÇÃO DE KIT: ${block.name}` : `${index + 1}. PRODUTO: ${block.name}`}
+              </h2>
             </div>
-          );
-        })}
+            <div className="p-4 space-y-4">
+              <div>
+                <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 border-b border-gray-200 pb-1">Ficha Técnica Requisitada</h3>
+                <ul className="space-y-3">
+                  {block.components.map((comp: any, i: number) => (
+                    <li key={i} className="text-xs text-gray-800 leading-relaxed">
+                      {block.isKit && <span className="font-bold block text-gray-900 uppercase mb-0.5">{comp.descricao}</span>}
+                      <span>{comp.specsStr}</span>
+                      {comp.prazo && <span className="text-[10px] text-rose-700 font-semibold block mt-0.5">Prazo Estimado: {comp.prazo}</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 border-b border-gray-200 pb-1">Grade de Tiragens para Cotação</h3>
+                <table className="w-full text-sm border-collapse">
+                  <thead className="bg-gray-50">
+                    <tr className="border-b border-gray-300 text-gray-600 text-[11px] uppercase text-left">
+                      <th className="py-2 px-4 font-bold">Quantidade Solicitada</th>
+                      <th className="py-2 px-4 font-bold border-l border-gray-300 w-40 text-right">Custo Unitário (R$)</th>
+                      <th className="py-2 px-4 font-bold border-l border-gray-300 w-40 text-right">Custo Total (R$)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {block.quantities.sort((a: any, b: any) => a - b).map((q: any, i: number) => (
+                      <tr key={i} className="border-b border-gray-200 last:border-0 h-10">
+                        <td className="py-2 px-4 font-bold text-gray-800">{q.toLocaleString('pt-BR')} unidades</td>
+                        <td className="py-2 px-4 border-l border-gray-200 bg-gray-50/20"></td>
+                        <td className="py-2 px-4 border-l border-gray-200 bg-gray-50/20"></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
-
-      <div className="mt-12 pt-4 border-t border-black text-center text-xs text-gray-500">
-        Documento gerado automaticamente. Qualquer dúvida nas especificações, favor retornar o contato antes da cotação.
-      </div>
+      <div className="mt-12 pt-4 border-t-2 border-black text-center text-xs text-gray-400">AA Representação • Gerado em {new Date().toLocaleDateString('pt-BR')}</div>
     </div>
   );
 }
