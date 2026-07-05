@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Copy, Trash2, Printer, ExternalLink, FileText } from "lucide-react";
+import { Plus, Copy, Trash2, Printer, ExternalLink, FileText, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -260,12 +260,8 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
       
       if (field === "fornecedor_valor_total") {
         const custoForn = Number(value) || 0;
-        const qtd = Number(novo.quantidade) || 1;
-        const precoUnit = custoForn / qtd;
 
         novo.fornecedor_valor_total = custoForn;
-        novo.preco_unitario = precoUnit;
-        novo.total = custoForn;
       } else if (field === "total" || field === "quantidade") {
         const qtd = Number(novo.quantidade) || 1;
         novo.preco_unitario = (Number(novo.total) || 0) / qtd;
@@ -279,12 +275,7 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
     
     if (field === "fornecedor_valor_total") {
       const custoForn = Number(value) || 0;
-      const qtd = Number(itemAtual?.quantidade) || 1;
-      const precoUnit = custoForn / qtd;
-
       updatePayload.fornecedor_valor_total = custoForn;
-      updatePayload.preco_unitario = precoUnit;
-      updatePayload.total = custoForn;
     } else if (field === "total" || field === "quantidade") {
       const qtd = field === "quantidade" ? Number(value) : (Number(itemAtual?.quantidade) || 1);
       const tot = field === "total" ? Number(value) : (Number(itemAtual?.total) || 0);
@@ -292,6 +283,50 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
     }
 
     await supabase.from("orcamento_itens").update(updatePayload).eq("id", id);
+  }
+
+  function updateConcorrenciaLocal(itemId: string, fornId: string, field: string, value: any) {
+    if (isLocked) return;
+    setConcorrencias(prev => {
+      const index = prev.findIndex(c => c.orcamento_item_id === itemId && c.fornecedor_id === fornId);
+      if (index >= 0) {
+        const newArr = [...prev];
+        newArr[index] = { ...newArr[index], [field]: value };
+        return newArr;
+      } else {
+        return [...prev, {
+          id: crypto.randomUUID(), // Temp ID para UI
+          orcamento_item_id: itemId,
+          fornecedor_id: fornId,
+          valor_total_custo: 0,
+          comissao_valor: 0,
+          numero_proposta_fornecedor: "",
+          is_vencedor: false,
+          [field]: value
+        }];
+      }
+    });
+  }
+
+  async function handleDefinirVencedor(itemId: string, fornId: string) {
+    if (isLocked) return;
+
+    const conc = concorrencias.find(c => c.orcamento_item_id === itemId && c.fornecedor_id === fornId);
+    if (!conc) return;
+
+    // Marca o vencedor localmente na matriz
+    setConcorrencias(prev => prev.map(c => ({
+      ...c,
+      is_vencedor: c.orcamento_item_id === itemId ? c.fornecedor_id === fornId : c.is_vencedor
+    })));
+
+    // Dispara o 'feed' de via única para a aba de Itens
+    await updateItemBD(itemId, "fornecedor_id", fornId);
+    await updateItemBD(itemId, "fornecedor_numero_proposta", conc.numero_proposta_fornecedor);
+    if (conc.comissao_valor) await updateItemBD(itemId, "comissao_lfa_valor", conc.comissao_valor);
+    await updateItemBD(itemId, "fornecedor_valor_total", conc.valor_total_custo);
+    
+    toast({ title: "Vencedor aplicado", description: "O custo foi transferido para o item." });
   }
 
   async function updateSharedSpec(cenario_id: string, field: string, value: any) {
@@ -448,6 +483,19 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
           await supabase.from("orcamento_fechamento").insert(fechPayload);
         }
         
+        // Salvar matriz de concorrências
+        const itemIdsToSave = itens.map(i => i.id);
+        if (itemIdsToSave.length > 0) {
+          await supabase.from("orcamento_concorrencias").delete().in("orcamento_item_id", itemIdsToSave);
+          if (concorrencias.length > 0) {
+            const concsToInsert = concorrencias.map(c => {
+              const { id, created_at, updated_at, ...rest } = c; // remove lixos de front
+              return rest;
+            });
+            await supabase.from("orcamento_concorrencias").insert(concsToInsert);
+          }
+        }
+
         toast({ title: "Orçamento salvo!" });
       }
       onSuccess?.();
@@ -771,9 +819,9 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                               <thead className="bg-muted/60 text-xs uppercase font-semibold text-muted-foreground">
                                 <tr>
                                   <th className="px-3 py-2 w-[30%]">Nome do Modelo / SKU</th>
-                                  <th className="px-3 py-2">Qtd</th>
-                                  <th className="px-3 py-2">Custo Forn (R$)</th>
-                                  
+                                  <th className="px-3 py-2 w-20">Qtd</th>
+                                  <th className="px-3 py-2 w-32">Custo Forn (R$)</th>
+                                  <th className="px-3 py-2 w-32">Venda Total (R$)</th>
                                   <th className="px-3 py-2">% Com. Total</th>
                                   {temAgente && <th className="px-3 py-2">% Comissão AA</th>}
                                   <th className="px-3 py-2 text-center w-10">Ações</th>
@@ -791,7 +839,16 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                                       </div>
                                     </td>
                                     <td className="p-2">
-                                      <Input type="number" className="h-8" value={linha.fornecedor_valor_total || 0} onChange={e => updateItemBD(linha.id, "fornecedor_valor_total", Number(e.target.value))} disabled={isLocked} />
+                                      <Input type="number" className="h-8 bg-muted" value={linha.fornecedor_valor_total || 0} onChange={e => updateItemBD(linha.id, "fornecedor_valor_total", Number(e.target.value))} disabled={isLocked} />
+                                    </td>
+                                    <td className="p-2 align-top">
+                                      <Input type="number" className="h-8 font-bold border-blue-200 focus-visible:ring-blue-500" value={linha.total || 0} onChange={e => updateItemBD(linha.id, "total", Number(e.target.value))} disabled={isLocked} />
+                                      {linha.fornecedor_valor_total > 0 && linha.total < linha.fornecedor_valor_total && (
+                                        <div className="flex items-center gap-1 mt-1 text-red-500" title="Valor de venda está abaixo do custo do fornecedor!">
+                                          <AlertCircle className="w-3 h-3" />
+                                          <span className="text-[10px] font-bold uppercase leading-tight">Abaixo do Custo!</span>
+                                        </div>
+                                      )}
                                     </td>
                                     
                                     {/* Com. Total */}
@@ -852,92 +909,93 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
               </TabsContent>
 
               {/* --- ABA CONCORRÊNCIA --- */}
-              <TabsContent className="m-0 h-full flex flex-col p-6 overflow-y-auto" value="concorrencia">
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h3 className="font-semibold text-foreground text-lg">Matriz de Concorrência</h3>
-                    <p className="text-xs text-muted-foreground">Adicione fornecedores e compare os custos de produção para cada cenário.</p>
-                  </div>
-                  {!isLocked && (
-                    <div className="flex gap-2">
-                      <Select onValueChange={(val) => {
-                        if (!colunasFornecedores.includes(val)) {
-                          setColunasFornecedores([...colunasFornecedores, val]);
-                        }
-                      }}>
-                        <SelectTrigger className="w-[250px]"><SelectValue placeholder="Adicionar Gráfica à Matriz" /></SelectTrigger>
-                        <SelectContent>
-                          {fornecedores.map(f => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+              <TabsContent value="concorrencia" className="m-0 h-full flex flex-col space-y-6">
+                <div className="bg-card p-5 border rounded-lg shadow-sm flex flex-col h-full">
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h3 className="font-semibold text-foreground text-lg">Matriz de Concorrência</h3>
+                      <p className="text-xs text-muted-foreground">Adicione gráficas e compare valores totais. A escolha sobrepõe o custo do item.</p>
                     </div>
-                  )}
-                </div>
-
-                {colunasFornecedores.length === 0 ? (
-                  <div className="text-center py-10 bg-muted/50 border border-dashed rounded-lg text-muted-foreground">
-                    Nenhuma gráfica adicionada à concorrência. Selecione um fornecedor acima para iniciar.
+                    {!isLocked && (
+                      <div className="flex gap-2">
+                        <Select onValueChange={(val) => {
+                          if (!colunasFornecedores.includes(val)) setColunasFornecedores([...colunasFornecedores, val]);
+                        }}>
+                          <SelectTrigger className="w-[280px]"><SelectValue placeholder="Adicionar Gráfica à Matriz" /></SelectTrigger>
+                          <SelectContent>
+                            {fornecedores.map(f => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="border rounded-lg overflow-x-auto bg-card">
-                    <table className="w-full text-sm text-left">
-                      <thead className="bg-muted/60 text-xs uppercase font-semibold text-muted-foreground">
-                        <tr>
-                          <th className="px-4 py-3 min-w-[200px] border-r">Item / Quantidade</th>
-                          {colunasFornecedores.map(fornId => {
-                            const forn = fornecedores.find(f => f.id === fornId);
-                            return (
-                              <th key={fornId} className="px-4 py-3 min-w-[250px] border-r text-center">
-                                {forn?.nome || "Fornecedor"}
-                                {!isLocked && (
-                                  <button onClick={() => setColunasFornecedores(prev => prev.filter(id => id !== fornId))} className="ml-2 text-red-500 hover:text-red-700 font-normal normal-case text-[10px]">
-                                    (Remover)
-                                  </button>
-                                )}
-                              </th>
-                            );
-                          })}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y">
-                        {itens.map((item: any) => (
-                          <tr key={item.id} className="hover:bg-muted/50">
-                            <td className="p-4 border-r align-top">
-                              <p className="font-bold text-foreground">{item.descricao}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">{item.quantidade} {item.quantidade_unidade}(s)</p>
-                            </td>
+
+                  {colunasFornecedores.length === 0 ? (
+                    <div className="text-center py-12 bg-muted/50 border border-dashed rounded-lg text-muted-foreground">
+                      Nenhuma gráfica adicionada à concorrência. Selecione um fornecedor acima para iniciar.
+                    </div>
+                  ) : (
+                    <div className="border rounded-lg overflow-x-auto flex-1 bg-card">
+                      <table className="w-full text-sm text-left">
+                        <thead className="bg-muted/60 text-xs uppercase font-semibold text-muted-foreground sticky top-0 z-10">
+                          <tr>
+                            <th className="px-4 py-3 min-w-[250px] border-r border-b">Item / Cenário</th>
                             {colunasFornecedores.map(fornId => {
-                              const conc = concorrencias.find(c => c.orcamento_item_id === item.id && c.fornecedor_id === fornId) || {};
+                              const forn = fornecedores.find(f => f.id === fornId);
                               return (
-                                <td key={fornId} className="p-4 border-r align-top">
-                                  <div className="space-y-3">
-                                    <div>
-                                      <Label className="text-[10px] text-muted-foreground">Custo Total (R$)</Label>
-                                      <Input type="number" className="h-8" value={conc.valor_total_custo || ""} disabled={isLocked} placeholder="0.00" />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                      <div>
-                                        <Label className="text-[10px] text-muted-foreground">Nº Proposta</Label>
-                                        <Input className="h-8 text-xs" value={conc.numero_proposta_fornecedor || ""} disabled={isLocked} />
-                                      </div>
-                                      <div>
-                                        <Label className="text-[10px] text-muted-foreground">Comissão (R$)</Label>
-                                        <Input type="number" className="h-8 text-xs" value={conc.comissao_valor || ""} disabled={isLocked} />
-                                      </div>
-                                    </div>
-                                    <Button size="sm" variant={conc.is_vencedor ? "default" : "outline"} className={`w-full h-7 text-xs ${conc.is_vencedor ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`} disabled={isLocked}>
-                                      {conc.is_vencedor ? "✓ Vencedor" : "Definir Vencedor"}
-                                    </Button>
-                                  </div>
-                                </td>
+                                <th key={fornId} className="px-4 py-3 min-w-[280px] border-r border-b text-center bg-muted/60">
+                                  {forn?.nome || "Fornecedor"}
+                                  {!isLocked && (
+                                    <button onClick={() => setColunasFornecedores(prev => prev.filter(id => id !== fornId))} className="ml-2 text-red-500 hover:text-red-700 font-normal normal-case text-[10px] underline">
+                                      remover
+                                    </button>
+                                  )}
+                                </th>
                               );
                             })}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                        </thead>
+                        <tbody className="divide-y">
+                          {itens.map((item: any) => (
+                            <tr key={item.id} className="hover:bg-muted/30">
+                              <td className="p-4 border-r align-top bg-muted/10">
+                                <p className="font-bold text-foreground">{item.descricao}</p>
+                                <p className="text-xs text-muted-foreground mt-1">Qtd: {item.quantidade} {item.quantidade_unidade}(s)</p>
+                                <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mt-2">Venda Atual: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.total || 0)}</p>
+                              </td>
+                              {colunasFornecedores.map(fornId => {
+                                const conc = concorrencias.find(c => c.orcamento_item_id === item.id && c.fornecedor_id === fornId) || {};
+                                return (
+                                  <td key={fornId} className={`p-4 border-r align-top transition-colors ${conc.is_vencedor ? 'bg-emerald-500/10' : ''}`}>
+                                    <div className="space-y-3">
+                                      <div>
+                                        <Label className="text-[10px] text-muted-foreground uppercase font-bold">Custo Total (R$)</Label>
+                                        <Input type="number" className="h-8 font-semibold" value={conc.valor_total_custo || ""} onChange={e => updateConcorrenciaLocal(item.id, fornId, 'valor_total_custo', Number(e.target.value))} disabled={isLocked} placeholder="0.00" />
+                                      </div>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                          <Label className="text-[10px] text-muted-foreground uppercase font-bold">Nº Proposta</Label>
+                                          <Input className="h-8 text-xs" value={conc.numero_proposta_fornecedor || ""} onChange={e => updateConcorrenciaLocal(item.id, fornId, 'numero_proposta_fornecedor', e.target.value)} disabled={isLocked} />
+                                        </div>
+                                        <div>
+                                          <Label className="text-[10px] text-muted-foreground uppercase font-bold">Comissão (R$)</Label>
+                                          <Input type="number" className="h-8 text-xs" value={conc.comissao_valor || ""} onChange={e => updateConcorrenciaLocal(item.id, fornId, 'comissao_valor', Number(e.target.value))} disabled={isLocked} />
+                                        </div>
+                                      </div>
+                                      <Button onClick={() => handleDefinirVencedor(item.id, fornId)} size="sm" variant={conc.is_vencedor ? "default" : "outline"} className={`w-full h-8 text-xs font-bold ${conc.is_vencedor ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700' : 'text-foreground hover:bg-muted'}`} disabled={isLocked}>
+                                        {conc.is_vencedor ? "✓ Vencedor Atual" : "Definir Vencedor"}
+                                      </Button>
+                                    </div>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
               </TabsContent>
 
               {/* --- ABA FECHAMENTO (CHECKLIST) --- */}
