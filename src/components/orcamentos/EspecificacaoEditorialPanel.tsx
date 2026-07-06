@@ -357,6 +357,17 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
                 </div>
 
                 <div className="flex flex-col gap-4">
+                  {/* Linha 0: Formato Customizado do Miolo */}
+                  <div className="grid gap-1.5 p-3 rounded bg-background/50 border border-border w-fit">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase">Formato do Miolo (mm)</Label>
+                    <div className="flex gap-2 items-center">
+                      <Input type="number" placeholder="Largura" className="h-8 bg-background w-[100px]" value={miolo.formato_largura || ""} onChange={e => updateMiolo(index, 'formato_largura', e.target.value)} disabled={disabled} />
+                      <span className="text-muted-foreground text-xs">x</span>
+                      <Input type="number" placeholder="Altura" className="h-8 bg-background w-[100px]" value={miolo.formato_altura || ""} onChange={e => updateMiolo(index, 'formato_altura', e.target.value)} disabled={disabled} />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground italic">Deixe em branco para herdar o Formato Fechado da capa</span>
+                  </div>
+
                   {/* Linha 1: Especificações Base */}
                   <div className="flex flex-wrap items-end gap-3">
                     {/* Páginas */}

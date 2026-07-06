@@ -26,32 +26,111 @@ export default function SolicitacaoPrintPage() {
         item.acabamentos ? `Acabamentos: ${item.acabamentos}` : null
       ].filter(Boolean).join(" | ");
     }
-    const parts = [];
-    if (s.tipo_obra) parts.push(`Obra: ${s.tipo_obra}`);
+    const lines = [];
+    
+    // --- Bloco Capa ---
+    if (s.capa) {
+      const capaParts = [];
+      const capaLargura = s.formato_largura || item.largura_mm || '';
+      const capaAltura = s.formato_altura || item.altura_mm || '';
+      
+      let formatoStr = '';
+      if (capaLargura && capaAltura) {
+        formatoStr = `Formato Fechado: ${capaLargura} x ${capaAltura} mm`;
+      }
+      if (s.capa.tem_orelha) {
+        const oEsq = s.capa.orelha_esquerda || '0';
+        const oDir = s.capa.orelha_direita || '0';
+        formatoStr += ` + Orelhas (Esq: ${oEsq}mm / Dir: ${oDir}mm)`;
+      }
+      if (formatoStr) capaParts.push(formatoStr);
+      
+      let c = `Papel: ${s.capa.papel} ${s.capa.gramatura}`;
+      capaParts.push(c);
+      
+      const coresCapa = s.capa.cores || 's/ cor';
+      const pantoneCapa = s.capa.usa_pantone && s.capa.pantone_cor ? ` + Pantone ${s.capa.pantone_cor}` : '';
+      capaParts.push(`${coresCapa}${pantoneCapa}`);
+      
+      if (s.capa.capa_dura) {
+        capaParts.push(`Capa Dura (${s.capa.espessura_papelao})`);
+      }
+      
+      const acabsCapa = [s.capa.acabamento_1, s.capa.acabamento_2, s.capa.acabamento_3].filter((a: any) => a && a !== 'Nenhum');
+      if (s.capa.acabamento_2 === 'Hotstamping' && s.capa.acab_2_cor) {
+        const idx = acabsCapa.indexOf('Hotstamping');
+        if (idx !== -1) acabsCapa[idx] = `Hotstamping ${s.capa.acab_2_cor} ${s.capa.acab_2_medida ? '('+s.capa.acab_2_medida+')' : ''}`.trim();
+      }
+      if (acabsCapa.length > 0) {
+        capaParts.push(`[${acabsCapa.join(', ')}]`);
+      }
+      
+      lines.push(`▶ CAPA: ${capaParts.join(' | ')}`);
+    }
+
+    // --- Bloco Miolos ---
+    if (s.miolos && Array.isArray(s.miolos)) {
+      s.miolos.forEach((m: any, idx: number) => {
+        const mioloParts = [];
+        
+        const mLargura = m.formato_largura || '';
+        const mAltura = m.formato_altura || '';
+        if (mLargura && mAltura) {
+          mioloParts.push(`Formato Fechado: ${mLargura} x ${mAltura} mm`);
+        } else if (s.formato_largura && s.formato_altura) {
+          mioloParts.push(`Formato Fechado: ${s.formato_largura} x ${s.formato_altura} mm`);
+        } else if (item.largura_mm && item.altura_mm) {
+          mioloParts.push(`Formato Fechado: ${item.largura_mm} x ${item.altura_mm} mm`);
+        }
+        
+        const papelNome = m.papel === 'Papel especial' && m.papel_especial_nome ? m.papel_especial_nome : m.papel;
+        mioloParts.push(`Papel: ${papelNome} ${m.gramatura}`);
+        
+        const coresMiolo = m.cores || 's/ cor';
+        const pantoneMiolo = m.usa_pantone && m.pantone_cor ? ` + Pantone ${m.pantone_cor}` : '';
+        mioloParts.push(`${coresMiolo}${pantoneMiolo}`);
+        
+        const acabsMiolo = [m.acabamento_1, m.acabamento_2].filter((a: any) => a && a !== 'Nenhum');
+        if (m.acabamento_2 === 'Hotstamping' && m.acab_2_cor) {
+          const idx = acabsMiolo.indexOf('Hotstamping');
+          if (idx !== -1) acabsMiolo[idx] = `Hotstamping ${m.acab_2_cor} ${m.acab_2_medida ? '('+m.acab_2_medida+')' : ''}`.trim();
+        }
+        if (acabsMiolo.length > 0) {
+          mioloParts.push(`[${acabsMiolo.join(', ')}]`);
+        }
+        
+        lines.push(`▶ MIOLO ${idx + 1}: ${m.paginas || 0} pgs | ${mioloParts.join(' | ')}`);
+      });
+    }
+
+    // --- Bloco Finalização ---
+    const finalizacaoParts = [];
     if (s.regra_encadernacao) {
       let enc = `Encadernação: ${s.regra_encadernacao}`;
       if (s.regra_encadernacao === 'Espiral') enc += ` ${s.espiral_material || ''} (${s.espiral_cor || ''})`;
       if (s.regra_encadernacao === 'Wire-O' && s.wireo_cor) enc += ` (${s.wireo_cor})`;
-      parts.push(enc.trim());
+      finalizacaoParts.push(enc.trim());
     }
-    if (s.capa) {
-      let c = `Capa: ${s.capa.papel} ${s.capa.gramatura}`;
-      c += ` (${s.capa.cores || 's/ cor'}${s.capa.usa_pantone && s.capa.pantone_cor ? ' + Pantone ' + s.capa.pantone_cor : ''})`;
-      if (s.capa.capa_dura) c += ` - Capa Dura (${s.capa.espessura_papelao})`;
-      const acabsCapa = [s.capa.acabamento_1, s.capa.acabamento_2, s.capa.acabamento_3].filter((a: any) => a && a !== 'Nenhum');
-      if (acabsCapa.length > 0) c += ` [${acabsCapa.join(', ')}]`;
-      parts.push(c);
+    
+    if (s.grupo_kit) {
+      finalizacaoParts.push(`Grupo Kit: ${s.grupo_kit}`);
     }
-    if (s.miolos && Array.isArray(s.miolos)) {
-      s.miolos.forEach((m: any, idx: number) => {
-        let mStr = `Miolo ${idx + 1}: ${m.paginas || 0} pgs - ${m.papel} ${m.gramatura}`;
-        mStr += ` (${m.cores || 's/ cor'}${m.usa_pantone && m.pantone_cor ? ' + Pantone ' + m.pantone_cor : ''})`;
-        const acabsMiolo = [m.acabamento_1, m.acabamento_2].filter((a: any) => a && a !== 'Nenhum');
-        if (acabsMiolo.length > 0) mStr += ` [${acabsMiolo.join(', ')}]`;
-        parts.push(mStr);
-      });
+
+    const embalagem = [];
+    if (s.shrink_individual) embalagem.push('Shrink Individual');
+    if (s.shrink_pacote) embalagem.push('Shrink Pacote');
+    if (s.caixa_papelao) embalagem.push('Caixa de Papelão');
+    if (s.entrega_pallet) embalagem.push('Pallet');
+    
+    if (embalagem.length > 0) {
+      finalizacaoParts.push(`Embalagem: ${embalagem.join(', ')}`);
     }
-    return parts.join(" | ");
+
+    if (finalizacaoParts.length > 0) {
+      lines.push(`▶ FINALIZAÇÃO: ${finalizacaoParts.join(' | ')}`);
+    }
+
+    return lines.join('\n');
   };
 
   useEffect(() => {
@@ -149,7 +228,7 @@ export default function SolicitacaoPrintPage() {
                   {block.components.map((comp: any, i: number) => (
                     <li key={i} className="text-xs text-gray-800 leading-relaxed">
                       {block.isKit && <span className="font-bold block text-gray-900 uppercase mb-0.5">{comp.descricao}</span>}
-                      <span>{comp.specsStr}</span>
+                      <span className="whitespace-pre-line">{comp.specsStr}</span>
                       {comp.prazo && <span className="text-[10px] text-rose-700 font-semibold block mt-0.5">Prazo Estimado: {comp.prazo}</span>}
                     </li>
                   ))}
