@@ -1162,48 +1162,80 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
-                          {itens.map((item: any) => (
-                            <tr key={item.id} className="hover:bg-muted/40 transition-colors">
-                              <td className="p-4 border-r border-border align-top bg-card">
-                                <p className="font-bold text-foreground leading-tight">{item.descricao}</p>
-                                
-                                {/* EXTRATO DA FICHA TÉCNICA DINÂMICA IGUAL À PROPOSTA */}
-                                <p className="text-[11px] text-muted-foreground leading-relaxed mt-2 italic bg-background/50 p-2 rounded border border-border whitespace-pre-line">
-                                  {buildSpecsString(item)}
-                                </p>
-                                
-                                <div className="mt-3 text-xs text-foreground font-medium">
-                                  Qtd: {item.quantidade} {item.quantidade_unidade}(s) | Venda: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.total || 0)}
-                                </div>
-                              </td>
-                              {colunasFornecedores.map(fornId => {
-                                const conc = concorrencias.find(c => c.orcamento_item_id === item.id && c.fornecedor_id === fornId) || {};
-                                return (
-                                  <td key={fornId} className={`p-4 border-r border-border align-top transition-colors ${conc.is_vencedor ? 'bg-emerald-500/10' : 'bg-card'}`}>
-                                    <div className="space-y-3">
-                                      <div>
-                                        <Label className="text-[10px] text-muted-foreground uppercase font-bold">Custo Total (R$)</Label>
-                                        <Input type="number" className="h-8 font-semibold bg-background border-input" value={conc.valor_total_custo || ""} onChange={e => updateConcorrenciaBD(item.id, fornId, 'valor_total_custo', e.target.value)} disabled={isLocked} placeholder="0.00" />
-                                      </div>
-                                      <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                          <Label className="text-[10px] text-muted-foreground uppercase font-bold">Nº Proposta</Label>
-                                          <Input className="h-8 text-xs bg-background border-input" value={conc.numero_proposta_fornecedor || ""} onChange={e => updateConcorrenciaBD(item.id, fornId, 'numero_proposta_fornecedor', e.target.value)} disabled={isLocked} />
-                                        </div>
-                                        <div>
-                                          <Label className="text-[10px] text-muted-foreground uppercase font-bold">Comissão (R$)</Label>
-                                          <Input type="number" className="h-8 text-xs bg-background border-input" value={conc.comissao_valor || ""} onChange={e => updateConcorrenciaBD(item.id, fornId, 'comissao_valor', e.target.value)} disabled={isLocked} />
-                                        </div>
-                                      </div>
-                                      <Button size="sm" variant={conc.is_vencedor ? "default" : "outline"} className={`w-full h-8 text-xs font-bold ${conc.is_vencedor ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}`} onClick={() => handleDefinirVencedor(item.id, fornId)} disabled={isLocked}>
-                                        {conc.is_vencedor ? "✓ Vencedor Atual" : "Definir Vencedor"}
-                                      </Button>
+                          {itens.map((item: any) => {
+                            const concorrenciasDoItem = concorrencias.filter(c => c.orcamento_item_id === item.id && Number(c.valor_total_custo) > 0);
+                            let menorConcorrencia = null;
+                            if (concorrenciasDoItem.length > 1) {
+                              menorConcorrencia = [...concorrenciasDoItem].sort((a, b) => Number(a.valor_total_custo) - Number(b.valor_total_custo))[0];
+                            } else if (concorrenciasDoItem.length === 1) {
+                              menorConcorrencia = concorrenciasDoItem[0];
+                            }
+                            const menorFornName = menorConcorrencia ? fornecedores.find(f => f.id === menorConcorrencia.fornecedor_id)?.nome : null;
+
+                            return (
+                              <tr key={item.id} className="hover:bg-muted/40 transition-colors">
+                                <td className="p-4 border-r border-border align-top bg-card">
+                                  <p className="font-bold text-foreground leading-tight">{item.descricao}</p>
+                                  
+                                  {menorConcorrencia && menorFornName && (
+                                    <div className="mt-2 mb-1">
+                                      <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                                        🏆 Menor Valor: {menorFornName} - {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(menorConcorrencia.valor_total_custo))}
+                                      </span>
                                     </div>
-                                  </td>
-                                );
-                              })}
-                            </tr>
-                          ))}
+                                  )}
+                                  
+                                  <p className="text-[11px] text-muted-foreground leading-relaxed mt-2 italic bg-background/50 p-2 rounded border border-border whitespace-pre-line">
+                                    {buildSpecsString(item)}
+                                  </p>
+                                  
+                                  <div className="mt-3 text-xs text-foreground font-medium">
+                                    Qtd: {item.quantidade} {item.quantidade_unidade}(s) | Venda: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.total || 0)}
+                                  </div>
+                                </td>
+                                {colunasFornecedores.map(fornId => {
+                                  const conc = concorrencias.find(c => c.orcamento_item_id === item.id && c.fornecedor_id === fornId) || {};
+                                  return (
+                                    <td key={fornId} className={`p-4 border-r border-border align-top transition-colors ${conc.is_vencedor ? 'bg-emerald-500/10' : 'bg-card'}`}>
+                                      <div className="space-y-3">
+                                        <div>
+                                          <Label className="text-[10px] text-muted-foreground uppercase font-bold">Custo Total (R$)</Label>
+                                          <Input type="number" className="h-8 font-semibold bg-background border-input" value={conc.valor_total_custo || ""} onChange={e => updateConcorrenciaBD(item.id, fornId, 'valor_total_custo', e.target.value)} disabled={isLocked} placeholder="0.00" />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <div>
+                                            <Label className="text-[10px] text-muted-foreground uppercase font-bold">Nº Proposta</Label>
+                                            <Input className="h-8 text-xs bg-background border-input" value={conc.numero_proposta_fornecedor || ""} onChange={e => updateConcorrenciaBD(item.id, fornId, 'numero_proposta_fornecedor', e.target.value)} disabled={isLocked} />
+                                          </div>
+                                          <div>
+                                            <Label className="text-[10px] text-muted-foreground uppercase font-bold">Comissão (R$)</Label>
+                                            <Input type="number" className="h-8 text-xs bg-background border-input" value={conc.comissao_valor || ""} onChange={e => updateConcorrenciaBD(item.id, fornId, 'comissao_valor', e.target.value)} disabled={isLocked} />
+                                          </div>
+                                        </div>
+                                        <Button size="sm" variant={conc.is_vencedor ? "default" : "outline"} className={`w-full h-8 text-xs font-bold ${conc.is_vencedor ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}`} onClick={() => handleDefinirVencedor(item.id, fornId)} disabled={isLocked}>
+                                          {conc.is_vencedor ? "⭐ Vencedor Atual" : "Definir Vencedor"}
+                                        </Button>
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline" 
+                                          className="w-full h-8 text-[10px] bg-background hover:bg-accent text-muted-foreground mt-2" 
+                                          onClick={() => {
+                                            if(Number(conc.valor_total_custo) > 0) {
+                                              updateItemBD(item.id, "fornecedor_valor_total", Number(conc.valor_total_custo));
+                                              updateItemBD(item.id, "total", Number(conc.valor_total_custo));
+                                            }
+                                          }} 
+                                          disabled={isLocked || !(Number(conc.valor_total_custo) > 0)}
+                                        >
+                                          Aplicar Valor
+                                        </Button>
+                                      </div>
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
