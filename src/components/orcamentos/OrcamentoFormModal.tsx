@@ -353,23 +353,35 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
   }
 
   async function handleAddFornecedorConcorrencia(fornId: string) {
-    if (colunasFornecedores.includes(fornId) || isLocked) return;
+    if (!savedId || isLocked || colunasFornecedores.includes(fornId)) return;
     
+    // Atualiza a tela imediatamente (Visual)
     setColunasFornecedores(prev => [...prev, fornId]);
     setExibirClienteMap(prev => ({ ...prev, [fornId]: true }));
-
-    const inserts = itens.map(item => ({
-      orcamento_item_id: item.id,
-      fornecedor_id: fornId,
-      valor_total_custo: 0,
-      comissao_valor: 0,
-      numero_proposta_fornecedor: "",
-      is_vencedor: false
-    }));
-
-    if (inserts.length > 0) {
-      const { data } = await supabase.from("orcamento_concorrencias").insert(inserts).select();
-      if (data) {
+    
+    // Vai no banco cavar as células
+    if (itens.length > 0) {
+      const novosRegistros = itens.map(item => ({
+        orcamento_item_id: item.id,
+        fornecedor_id: fornId,
+        valor_total_custo: 0,
+        comissao_valor: 0,
+        numero_proposta_fornecedor: "",
+        is_vencedor: false
+      }));
+      
+      const { data, error } = await supabase.from("orcamento_concorrencias").insert(novosRegistros).select();
+      
+      if (error) {
+        console.error("ERRO FATAL NA MATRIZ:", error);
+        toast({ 
+          title: "Erro ao criar coluna no Banco!", 
+          description: error.message, 
+          variant: "destructive" 
+        });
+        // Se deu erro no banco, remove da tela para não enganar o usuário
+        setColunasFornecedores(prev => prev.filter(id => id !== fornId));
+      } else if (data) {
         setConcorrencias(prev => [...prev, ...data]);
       }
     }
