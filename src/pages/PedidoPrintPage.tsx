@@ -29,6 +29,9 @@ const buildSpecsString = (item: any) => {
     ].filter(Boolean).join(" | ");
   }
   const parts = [];
+  if (s.formato_largura && s.formato_altura) {
+    parts.push(`Formato Fechado: ${s.formato_largura} x ${s.formato_altura} mm`);
+  }
   if (s.tipo_obra) parts.push(`Obra: ${s.tipo_obra}`);
   if (s.regra_encadernacao) {
     let enc = `Encadernação: ${s.regra_encadernacao}`;
@@ -45,7 +48,7 @@ const buildSpecsString = (item: any) => {
     if (s.capa.tem_orelha) {
       const oEsq = s.capa.orelha_esquerda || '0';
       const oDir = s.capa.orelha_direita || '0';
-      c += ` + Orelhas (Esq: ${oEsq}mm, Dir: ${oDir}mm)`;
+      c += ` + Orelhas (Esq: ${oEsq}mm / Dir: ${oDir}mm)`;
     }
     parts.push(c);
   }
