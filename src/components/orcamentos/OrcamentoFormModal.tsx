@@ -721,8 +721,16 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
 
   const confirmarAberturaPedido = () => {
     convertPedido(editing.id, {
-      onSuccess: (data: any) => {
-        navigate(`/pedidos/${data.id}`);
+      onSuccess: (data: string[]) => {
+        if (data && data.length === 1) {
+          navigate(`/pedidos/${data[0]}`);
+        } else if (data && data.length > 1) {
+          toast({
+            title: "Sucesso!",
+            description: `Foram gerados ${data.length} pedidos separados!`
+          });
+          navigate(`/pedidos`);
+        }
         setPreviewPedidoOpen(false);
         onOpenChange(false);
       }
@@ -1222,12 +1230,16 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                                           onClick={() => {
                                             const custoForn = Number(conc.valor_total_custo) || 0;
                                             const comissForn = Number(conc.comissao_valor) || 0;
+                                            const propNum = conc.numero_proposta_fornecedor || "";
                                             if(custoForn > 0) {
                                               updateItemBD(item.id, "fornecedor_valor_total", custoForn);
                                               updateItemBD(item.id, "total", custoForn);
                                               
                                               // A comissão inserida já é percentual
                                               updateItemBD(item.id, "comissao_lfa_percentual", comissForn);
+                                              
+                                              // Transfere o número da proposta
+                                              updateItemBD(item.id, "fornecedor_numero_proposta", propNum);
                                             }
                                           }} 
                                           disabled={isLocked || !(Number(conc.valor_total_custo) > 0)}

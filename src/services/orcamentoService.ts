@@ -112,15 +112,15 @@ export const orcamentoService = {
 
   async abrirPedido(orcamentoId: string) {
     const { data, error } = await supabase
-      .rpc("abrir_pedido_v2", { p_orcamento_id: orcamentoId });
+      .rpc("abrir_pedidos_fracionados", { p_orcamento_id: orcamentoId });
 
     if (error) throw error;
 
-    const novoPedidoId = typeof data === 'string' ? data : (data?.id || data?.[0]?.id);
+    const pedidosIds = data as string[];
 
-    if (!novoPedidoId) throw new Error("ID do pedido não retornado pelo banco.");
+    if (!pedidosIds || pedidosIds.length === 0) throw new Error("Nenhum pedido foi gerado pela conversão.");
 
-    if (novoPedidoId) {
+    if (pedidosIds.length > 0) {
       // Herda todos os campos operacionais do orçamento para o pedido
       const { data: orcData } = await supabase
         .from("orcamentos")
@@ -140,12 +140,12 @@ export const orcamentoService = {
           await supabase
             .from("pedidos")
             .update(pedidoPayload)
-            .eq("id", novoPedidoId);
+            .in("id", pedidosIds);
         }
       }
     }
 
-    return { id: novoPedidoId }; // Retorna o ID do novo pedido criado
+    return pedidosIds; // Retorna o array de IDs dos novos pedidos criados
   },
 
   async duplicarOrcamento(orcamentoId: string) {
