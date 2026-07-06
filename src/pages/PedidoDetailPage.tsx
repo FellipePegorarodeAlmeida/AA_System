@@ -178,10 +178,10 @@ export default function PedidoDetailPage() {
 
       const { error } = await supabase
         .from("pedidos")
-        .update(payload)
+        .update(payload as any)
         .eq("id", id);
       
-      if (error) throw error;
+      if (error) { console.error('Erro SUPABASE:', error); alert('Erro ao salvar no banco: ' + error.message); throw error; }
       toast({ title: "Pedido atualizado com sucesso" });
     } catch (err: any) {
       toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
@@ -218,14 +218,15 @@ export default function PedidoDetailPage() {
   async function handleSaveItensOverrun() {
     setSavingItens(true);
     try {
-      const itensPromises = itens.map(it => {
+      const itensPromises = itens.map(async (it) => {
         const payload = { 
           quantidade: Number(it.quantidade), 
           total: Number(it.total),
           fornecedor_numero_proposta: it.fornecedor_numero_proposta || null
         };
         console.log(`Payload Item (pedido_itens) ${it.id}:`, payload);
-        return supabase.from("pedido_itens").update(payload).eq("id", it.id);
+        const { error } = await supabase.from("pedido_itens").update(payload as any).eq("id", it.id);
+        if (error) { console.error('Erro SUPABASE:', error); alert('Erro ao salvar no banco: ' + error.message); throw error; }
       });
       await Promise.all(itensPromises);
       setItensDirty(false);
