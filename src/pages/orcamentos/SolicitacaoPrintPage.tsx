@@ -56,13 +56,34 @@ export default function SolicitacaoPrintPage() {
         capaParts.push(`Capa Dura (${s.capa.espessura_papelao})`);
       }
       
-      const acabsCapa = [s.capa.acabamento_1, s.capa.acabamento_2, s.capa.acabamento_3].filter((a: any) => a && a !== 'Nenhum');
-      if (s.capa.acabamento_2 === 'Hotstamping' && s.capa.acab_2_cor) {
-        const idx = acabsCapa.indexOf('Hotstamping');
-        if (idx !== -1) acabsCapa[idx] = `Hotstamping ${s.capa.acab_2_cor} ${s.capa.acab_2_medida ? '('+s.capa.acab_2_medida+')' : ''}`.trim();
+      const acabsCapa = [];
+      const cAcab1 = s.capa.acabamento1 || s.capa.acabamento_1;
+      if (cAcab1 && cAcab1 !== 'Nenhum') acabsCapa.push(cAcab1);
+      
+      const cAcab2 = s.capa.acabamento2 || s.capa.acabamento_2;
+      if (cAcab2 && cAcab2 !== 'Nenhum') {
+        if (cAcab2 === 'Hotstamping') {
+           const cor2 = s.capa.hotstamping2_cor || s.capa.acab_2_cor || '';
+           const med2 = s.capa.hotstamping2_medida || s.capa.acab_2_medida || '';
+           acabsCapa.push(`Hotstamping ${cor2} ${med2 ? '('+med2+')' : ''}`.trim());
+        } else {
+           acabsCapa.push(cAcab2);
+        }
       }
+      
+      const cAcab3 = s.capa.acabamento3 || s.capa.acabamento_3;
+      if (cAcab3 && cAcab3 !== 'Nenhum') {
+        if (cAcab3 === 'Hotstamping') {
+           const cor3 = s.capa.hotstamping3_cor || s.capa.acab_3_cor || '';
+           const med3 = s.capa.hotstamping3_medida || s.capa.acab_3_medida || '';
+           acabsCapa.push(`Hotstamping ${cor3} ${med3 ? '('+med3+')' : ''}`.trim());
+        } else {
+           acabsCapa.push(cAcab3);
+        }
+      }
+      
       if (acabsCapa.length > 0) {
-        capaParts.push(`[${acabsCapa.join(', ')}]`);
+        capaParts.push(`Acabamentos: [${acabsCapa.join(', ')}]`);
       }
       
       lines.push(`▶ CAPA: ${capaParts.join(' | ')}`);
@@ -90,13 +111,23 @@ export default function SolicitacaoPrintPage() {
         const pantoneMiolo = m.usa_pantone && m.pantone_cor ? ` + Pantone ${m.pantone_cor}` : '';
         mioloParts.push(`${coresMiolo}${pantoneMiolo}`);
         
-        const acabsMiolo = [m.acabamento_1, m.acabamento_2].filter((a: any) => a && a !== 'Nenhum');
-        if (m.acabamento_2 === 'Hotstamping' && m.acab_2_cor) {
-          const idx = acabsMiolo.indexOf('Hotstamping');
-          if (idx !== -1) acabsMiolo[idx] = `Hotstamping ${m.acab_2_cor} ${m.acab_2_medida ? '('+m.acab_2_medida+')' : ''}`.trim();
+        const acabsMiolo = [];
+        const mAcab1 = m.acabamento1 || m.acabamento_1;
+        if (mAcab1 && mAcab1 !== 'Nenhum') acabsMiolo.push(mAcab1);
+        
+        const mAcab2 = m.acabamento2 || m.acabamento_2;
+        if (mAcab2 && mAcab2 !== 'Nenhum') {
+          if (mAcab2 === 'Hotstamping') {
+            const mCor = m.hotstamping_cor || m.acab_2_cor || '';
+            const mMed = m.hotstamping_medida || m.acab_2_medida || '';
+            acabsMiolo.push(`Hotstamping ${mCor} ${mMed ? '('+mMed+')' : ''}`.trim());
+          } else {
+            acabsMiolo.push(mAcab2);
+          }
         }
+        
         if (acabsMiolo.length > 0) {
-          mioloParts.push(`[${acabsMiolo.join(', ')}]`);
+          mioloParts.push(`Acabamentos: [${acabsMiolo.join(', ')}]`);
         }
         
         lines.push(`▶ MIOLO ${idx + 1}: ${m.paginas || 0} pgs | ${mioloParts.join(' | ')}`);
