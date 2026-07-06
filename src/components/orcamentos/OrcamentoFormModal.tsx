@@ -1208,7 +1208,7 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                                             <Input className="h-8 text-xs bg-background border-input" value={conc.numero_proposta_fornecedor || ""} onChange={e => updateConcorrenciaBD(item.id, fornId, 'numero_proposta_fornecedor', e.target.value)} disabled={isLocked} />
                                           </div>
                                           <div>
-                                            <Label className="text-[10px] text-muted-foreground uppercase font-bold">Comissão (R$)</Label>
+                                            <Label className="text-[10px] text-muted-foreground uppercase font-bold">Comissão (%)</Label>
                                             <Input type="number" className="h-8 text-xs bg-background border-input" value={conc.comissao_valor || ""} onChange={e => updateConcorrenciaBD(item.id, fornId, 'comissao_valor', e.target.value)} disabled={isLocked} />
                                           </div>
                                         </div>
@@ -1226,9 +1226,8 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                                               updateItemBD(item.id, "fornecedor_valor_total", custoForn);
                                               updateItemBD(item.id, "total", custoForn);
                                               
-                                              // Converte o valor nominal da comissão em percentual sobre o custo/venda para preencher a Ficha do Item
-                                              const pct = comissForn > 0 ? (comissForn / custoForn) * 100 : 0;
-                                              updateItemBD(item.id, "comissao_lfa_percentual", Number(pct.toFixed(4)));
+                                              // A comissão inserida já é percentual
+                                              updateItemBD(item.id, "comissao_lfa_percentual", comissForn);
                                             }
                                           }} 
                                           disabled={isLocked || !(Number(conc.valor_total_custo) > 0)}
