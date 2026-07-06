@@ -268,6 +268,7 @@ export interface PedidoItem {
   unidade_medida?: string | null;
   substrato?: string | null;
   acabamentos?: string | null;
+  fornecedor_numero_proposta?: string | null;
 }
 
 export interface NotaFiscal {

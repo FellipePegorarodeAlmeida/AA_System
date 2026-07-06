@@ -201,11 +201,26 @@ export default function PedidoDetailPage() {
     setPedido(prev => ({ ...prev, total: Number(novoTotalGeral.toFixed(4)) }));
   }
 
+  function handlePropostaLocalChange(itemId: string, novaProposta: string) {
+    const novosItens = itens.map(it => {
+      if (it.id === itemId) {
+        return { ...it, fornecedor_numero_proposta: novaProposta };
+      }
+      return it;
+    });
+    setItens(novosItens);
+    setItensDirty(true);
+  }
+
   async function handleSaveItensOverrun() {
     setSavingItens(true);
     try {
       const itensPromises = itens.map(it => 
-        supabase.from("pedido_itens").update({ quantidade: Number(it.quantidade), total: Number(it.total) }).eq("id", it.id)
+        supabase.from("pedido_itens").update({ 
+          quantidade: Number(it.quantidade), 
+          total: Number(it.total),
+          fornecedor_numero_proposta: it.fornecedor_numero_proposta || null
+        }).eq("id", it.id)
       );
       await Promise.all(itensPromises);
       setItensDirty(false);
@@ -706,6 +721,16 @@ export default function PedidoDetailPage() {
                               {buildSpecsString(item)}
                             </p>
                             {item.observacoes_tecnicas && <div><span className="font-semibold">Obs:</span> {item.observacoes_tecnicas}</div>}
+                          </div>
+                          
+                          <div className="mt-3 flex items-center gap-2">
+                            <span className="text-xs font-semibold text-muted-foreground uppercase">Nº Proposta Fornecedor:</span>
+                            <Input
+                              className="h-7 w-48 text-xs bg-indigo-50/30 border-indigo-100 focus-visible:ring-indigo-500"
+                              placeholder="Ex: PROP-00123"
+                              value={item.fornecedor_numero_proposta || ""}
+                              onChange={(e) => handlePropostaLocalChange(item.id, e.target.value)}
+                            />
                           </div>
                         </td>
                         <td className="p-3 align-top w-32">
