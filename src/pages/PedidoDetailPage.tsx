@@ -54,7 +54,7 @@ export default function PedidoDetailPage() {
       
       const { data: rawPedido } = await supabase
         .from("pedidos")
-        .select("contato_id, endereco_entrega_id, total, modalidade_frete_id")
+        .select("contato_id, endereco_entrega_id, total, modalidade_frete_id, tipo_prova")
         .eq("id", id)
         .maybeSingle();
 
@@ -63,8 +63,8 @@ export default function PedidoDetailPage() {
           vwData.contato_id = rawPedido.contato_id;
           vwData.endereco_entrega_id = rawPedido.endereco_entrega_id;
           vwData.total = rawPedido.total;
-          // vwData.valor_frete = rawPedido.valor_frete;
           vwData.modalidade_frete_id = rawPedido.modalidade_frete_id;
+          vwData.tipo_prova = rawPedido.tipo_prova;
         }
         setPedido(vwData);
       }
