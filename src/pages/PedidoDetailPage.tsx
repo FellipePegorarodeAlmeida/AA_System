@@ -162,20 +162,23 @@ export default function PedidoDetailPage() {
   async function handleSaveResumo() {
     setSavingResumo(true);
     try {
+      const payload = {
+        status: pedido.status,
+        previsao_entrega: pedido.previsao_entrega || null,
+        numero_nf: pedido.numero_nf || null,
+        data_emissao_nf: pedido.data_emissao_nf || null,
+        observacoes_operacionais: pedido.observacoes_operacionais || null,
+        tipo_prova: pedido.tipo_prova || null,
+        modalidade_frete_id: pedido.modalidade_frete_id || null,
+
+        endereco_entrega_id: pedido.endereco_entrega_id || null,
+        contato_id: pedido.contato_id || null,
+      };
+      console.log("Payload Cabeçalho (pedidos):", payload);
+
       const { error } = await supabase
         .from("pedidos")
-        .update({
-          status: pedido.status,
-          previsao_entrega: pedido.previsao_entrega || null,
-          numero_nf: pedido.numero_nf || null,
-          data_emissao_nf: pedido.data_emissao_nf || null,
-          observacoes_operacionais: pedido.observacoes_operacionais || null,
-          tipo_prova: pedido.tipo_prova || null,
-          modalidade_frete_id: pedido.modalidade_frete_id || null,
-
-          endereco_entrega_id: pedido.endereco_entrega_id || null,
-          contato_id: pedido.contato_id || null,
-        })
+        .update(payload)
         .eq("id", id);
       
       if (error) throw error;
@@ -215,13 +218,15 @@ export default function PedidoDetailPage() {
   async function handleSaveItensOverrun() {
     setSavingItens(true);
     try {
-      const itensPromises = itens.map(it => 
-        supabase.from("pedido_itens").update({ 
+      const itensPromises = itens.map(it => {
+        const payload = { 
           quantidade: Number(it.quantidade), 
           total: Number(it.total),
           fornecedor_numero_proposta: it.fornecedor_numero_proposta || null
-        }).eq("id", it.id)
-      );
+        };
+        console.log(`Payload Item (pedido_itens) ${it.id}:`, payload);
+        return supabase.from("pedido_itens").update(payload).eq("id", it.id);
+      });
       await Promise.all(itensPromises);
       setItensDirty(false);
       toast({ title: "Quantidades atualizadas! Verifique o Fechamento." });
