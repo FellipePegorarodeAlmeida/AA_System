@@ -307,6 +307,11 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
       if (s.capa.capa_dura) c += ` - Capa Dura (${s.capa.espessura_papelao})`;
       const acabsCapa = [s.capa.acabamento_1, s.capa.acabamento_2, s.capa.acabamento_3].filter((a: any) => a && a !== 'Nenhum');
       if (acabsCapa.length > 0) c += ` [${acabsCapa.join(', ')}]`;
+      if (s.capa.tem_orelha) {
+        const oEsq = s.capa.orelha_esquerda || '0';
+        const oDir = s.capa.orelha_direita || '0';
+        c += ` + Orelhas (Esq: ${oEsq}mm, Dir: ${oDir}mm)`;
+      }
       parts.push(c);
     }
     if (s.miolos && Array.isArray(s.miolos)) {

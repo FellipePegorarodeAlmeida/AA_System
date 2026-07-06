@@ -108,6 +108,11 @@ export default function OrcamentoPrintPage() {
         if (idx !== -1) acabsCapa[idx] = `Hotstamping ${s.capa.acab_2_cor} ${s.capa.acab_2_medida ? '('+s.capa.acab_2_medida+')' : ''}`.trim();
       }
       if (acabsCapa.length > 0) c += ` [${acabsCapa.join(', ')}]`;
+      if (s.capa.tem_orelha) {
+        const oEsq = s.capa.orelha_esquerda || '0';
+        const oDir = s.capa.orelha_direita || '0';
+        c += ` + Orelhas (Esq: ${oEsq}mm, Dir: ${oDir}mm)`;
+      }
       parts.push(c);
     }
 

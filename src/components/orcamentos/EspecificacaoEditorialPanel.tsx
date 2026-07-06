@@ -289,8 +289,47 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
               </div>
             </div>
 
+            {/* Orelhas */}
+            <div className="space-y-3 col-span-full mt-4 p-4 border rounded-lg bg-card shadow-sm">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="tem_orelha"
+                  disabled={disabled}
+                  checked={capa.tem_orelha || false}
+                  onCheckedChange={(val) => updateCapa("tem_orelha", !!val)}
+                />
+                <Label htmlFor="tem_orelha" className="text-sm font-bold cursor-pointer">Possui Orelhas?</Label>
+              </div>
+              {capa.tem_orelha && (
+                <div className="flex flex-wrap gap-4 mt-3">
+                  <div className="grid gap-1.5">
+                    <Label className="text-xs text-muted-foreground">Orelha Esquerda (mm)</Label>
+                    <Input
+                      disabled={disabled}
+                      type="number"
+                      className="h-8 bg-background text-sm w-[150px]"
+                      placeholder="Ex: 80"
+                      value={capa.orelha_esquerda || ""}
+                      onChange={(e) => updateCapa("orelha_esquerda", e.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label className="text-xs text-muted-foreground">Orelha Direita (mm)</Label>
+                    <Input
+                      disabled={disabled}
+                      type="number"
+                      className="h-8 bg-background text-sm w-[150px]"
+                      placeholder="Ex: 80"
+                      value={capa.orelha_direita || ""}
+                      onChange={(e) => updateCapa("orelha_direita", e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Observações / Campo Extra */}
-            <div className="space-y-1.5 col-span-full mt-2">
+            <div className="space-y-1.5 col-span-full mt-4">
               <Label className="text-xs">Observações / Campo Extra</Label>
               <Textarea
                 disabled={disabled}
