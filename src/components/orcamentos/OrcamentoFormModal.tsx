@@ -1375,26 +1375,18 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                 </div>
                 
                 {/* Ficha Técnica (Especificações) */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-background p-3 rounded border border-gray-100 shadow-sm">
-                  <div>
-                    <span className="text-muted-foreground block mb-0.5">Dimensões (mm)</span> 
-                    <span className="font-semibold text-foreground">
-                      {item.largura_mm && item.altura_mm ? `${item.largura_mm} x ${item.altura_mm}` : "Não inf."}
-                    </span>
+                <div className="bg-background p-3 rounded border border-gray-100 shadow-sm">
+                  <div className="flex justify-end text-xs">
+                    <div>
+                      <span className="text-muted-foreground mr-1">Prazo Estimado:</span> 
+                      <span className="font-semibold text-foreground">{item.prazo_estimado || "Não inf."}</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground block mb-0.5">Substrato</span> 
-                    <span className="font-semibold text-foreground">{item.substrato || "Não inf."}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block mb-0.5">Prazo Estimado</span> 
-                    <span className="font-semibold text-foreground">{item.prazo_estimado || "Não inf."}</span>
-                  </div>
-                  <div className="col-span-2 sm:col-span-4 border-t pt-2 mt-1">
-                    <span className="text-muted-foreground block mb-0.5">Especificação Completa (Acabamentos)</span> 
-                    <span className="font-medium text-foreground whitespace-pre-wrap">
-                      {item.acabamentos || "Nenhuma especificação técnica informada."}
-                    </span>
+                  
+                  <div className="mt-2 bg-muted/50 p-3 rounded border border-border">
+                    <p className="text-[12px] text-muted-foreground whitespace-pre-line leading-relaxed">
+                      {buildSpecsString(item)}
+                    </p>
                   </div>
                 </div>
               </div>
