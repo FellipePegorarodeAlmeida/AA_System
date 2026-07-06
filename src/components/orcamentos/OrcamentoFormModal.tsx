@@ -578,11 +578,15 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
           imposto_valor: calc.imposto_valor,
         };
         
-        if (fechamento?.id) {
-          await supabase.from("orcamento_fechamento").update(fechPayload).eq("id", fechamento.id);
-        } else {
-          await supabase.from("orcamento_fechamento").insert(fechPayload);
-        }
+        // Salva espelho no fechamento (Upsert seguro contra Race Conditions)
+        const { error: fechError } = await supabase
+          .from("orcamento_fechamento")
+          .upsert(
+            { orcamento_id: orcId, ...fechPayload }, 
+            { onConflict: 'orcamento_id' }
+          );
+          
+        if (fechError) throw fechError;
         
 
 

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -557,6 +557,7 @@ export function ClienteFormModal({
         <DialogContent className="max-h-[90vh] w-full max-w-[95vw] overflow-y-auto sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>{cliente ? "Editar cliente" : "Novo cliente"}</DialogTitle>
+            <DialogDescription className="sr-only">Preencha os dados do cliente</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4">
             <div className="flex flex-wrap items-end gap-3">
@@ -936,6 +937,7 @@ export function ClienteFormModal({
         <DialogContent className="max-h-[90vh] w-full max-w-[95vw] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editingEndereco ? "Editar endereço de entrega" : "Novo endereço de entrega"}</DialogTitle>
+            <DialogDescription className="sr-only">Preencha os dados do endereço</DialogDescription>
           </DialogHeader>
           <div className="mb-2">
             <Button variant="secondary" size="sm" onClick={handleCopyFaturamento} className="w-full sm:w-auto">
@@ -1043,6 +1045,7 @@ export function ClienteFormModal({
         <DialogContent className="max-h-[90vh] w-full max-w-[95vw] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editingContato ? "Editar contato" : "Novo contato"}</DialogTitle>
+            <DialogDescription className="sr-only">Preencha os dados do contato</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.8fr_1fr]">
