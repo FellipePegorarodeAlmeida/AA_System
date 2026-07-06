@@ -240,6 +240,43 @@ export default function PedidoDetailPage() {
     );
   }
 
+  const buildSpecsString = (item: any) => {
+    const s = item.especificacao_tecnica || item.specs || {};
+    if (Object.keys(s).length === 0 || !s.capa) {
+      return [
+        item.formato ? `Formato: ${item.formato}` : (item.largura_mm ? `Formato: ${item.largura_mm}x${item.altura_mm}mm` : null),
+        item.substrato ? `Substrato: ${item.substrato}` : null,
+        item.acabamentos ? `Acabamentos: ${item.acabamentos}` : null
+      ].filter(Boolean).join(" | ");
+    }
+    const parts = [];
+    if (s.tipo_obra) parts.push(`Obra: ${s.tipo_obra}`);
+    if (s.regra_encadernacao) {
+      let enc = `Encadernação: ${s.regra_encadernacao}`;
+      if (s.regra_encadernacao === 'Espiral') enc += ` ${s.espiral_material || ''} (${s.espiral_cor || ''})`;
+      if (s.regra_encadernacao === 'Wire-O' && s.wireo_cor) enc += ` (${s.wireo_cor})`;
+      parts.push(enc.trim());
+    }
+    if (s.capa) {
+      let c = `Capa: ${s.capa.papel} ${s.capa.gramatura}`;
+      c += ` (${s.capa.cores || 's/ cor'}${s.capa.usa_pantone && s.capa.pantone_cor ? ' + Pantone ' + s.capa.pantone_cor : ''})`;
+      if (s.capa.capa_dura) c += ` - Capa Dura (${s.capa.espessura_papelao})`;
+      const acabsCapa = [s.capa.acabamento_1, s.capa.acabamento_2, s.capa.acabamento_3].filter((a: any) => a && a !== 'Nenhum');
+      if (acabsCapa.length > 0) c += ` [${acabsCapa.join(', ')}]`;
+      parts.push(c);
+    }
+    if (s.miolos && Array.isArray(s.miolos)) {
+      s.miolos.forEach((m: any, idx: number) => {
+        let mStr = `Miolo ${idx + 1}: ${m.paginas || 0} pgs - ${m.papel} ${m.gramatura}`;
+        mStr += ` (${m.cores || 's/ cor'}${m.usa_pantone && m.pantone_cor ? ' + Pantone ' + m.pantone_cor : ''})`;
+        const acabsMiolo = [m.acabamento_1, m.acabamento_2].filter((a: any) => a && a !== 'Nenhum');
+        if (acabsMiolo.length > 0) mStr += ` [${acabsMiolo.join(', ')}]`;
+        parts.push(mStr);
+      });
+    }
+    return parts.join(" | ");
+  };
+
   const formatMoney = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
   };
@@ -533,15 +570,9 @@ export default function PedidoDetailPage() {
                           </div>
                           <div className="mt-2 text-xs text-muted-foreground space-y-1">
                             {item.descricao_tecnica && <div><span className="font-semibold">Técnica:</span> {item.descricao_tecnica}</div>}
-                            {(Number(item.largura) > 0 || Number(item.largura_mm) > 0) && (Number(item.altura) > 0 || Number(item.altura_mm) > 0) ? (
-                              <div>
-                                <span className="font-semibold">Formato:</span> {item.largura || item.largura_mm} x {item.altura || item.altura_mm} {item.unidade_medida || 'mm'}
-                              </div>
-                            ) : (
-                              item.formato && <div><span className="font-semibold">Formato:</span> {item.formato}</div>
-                            )}
-                            {item.substrato && <div><span className="font-semibold">Substrato:</span> {item.substrato}</div>}
-                            {item.acabamentos && <div><span className="font-semibold">Acabamentos:</span> {item.acabamentos}</div>}
+                            <p className="text-[11px] text-muted-foreground leading-relaxed italic bg-muted/50 p-2 rounded border border-border">
+                              {buildSpecsString(item)}
+                            </p>
                             {item.observacoes_tecnicas && <div><span className="font-semibold">Obs:</span> {item.observacoes_tecnicas}</div>}
                           </div>
                         </td>

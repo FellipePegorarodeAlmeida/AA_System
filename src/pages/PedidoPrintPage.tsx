@@ -19,6 +19,43 @@ const formatDate = (dateStr: string | null) => {
   return new Date(dateStr).toLocaleDateString("pt-BR");
 };
 
+const buildSpecsString = (item: any) => {
+  const s = item.especificacao_tecnica || item.specs || {};
+  if (Object.keys(s).length === 0 || !s.capa) {
+    return [
+      item.formato ? `Formato: ${item.formato}` : (item.largura_mm ? `Formato: ${item.largura_mm}x${item.altura_mm}mm` : null),
+      item.substrato ? `Substrato: ${item.substrato}` : null,
+      item.acabamentos ? `Acabamentos: ${item.acabamentos}` : null
+    ].filter(Boolean).join(" | ");
+  }
+  const parts = [];
+  if (s.tipo_obra) parts.push(`Obra: ${s.tipo_obra}`);
+  if (s.regra_encadernacao) {
+    let enc = `Encadernação: ${s.regra_encadernacao}`;
+    if (s.regra_encadernacao === 'Espiral') enc += ` ${s.espiral_material || ''} (${s.espiral_cor || ''})`;
+    if (s.regra_encadernacao === 'Wire-O' && s.wireo_cor) enc += ` (${s.wireo_cor})`;
+    parts.push(enc.trim());
+  }
+  if (s.capa) {
+    let c = `Capa: ${s.capa.papel} ${s.capa.gramatura}`;
+    c += ` (${s.capa.cores || 's/ cor'}${s.capa.usa_pantone && s.capa.pantone_cor ? ' + Pantone ' + s.capa.pantone_cor : ''})`;
+    if (s.capa.capa_dura) c += ` - Capa Dura (${s.capa.espessura_papelao})`;
+    const acabsCapa = [s.capa.acabamento_1, s.capa.acabamento_2, s.capa.acabamento_3].filter((a: any) => a && a !== 'Nenhum');
+    if (acabsCapa.length > 0) c += ` [${acabsCapa.join(', ')}]`;
+    parts.push(c);
+  }
+  if (s.miolos && Array.isArray(s.miolos)) {
+    s.miolos.forEach((m: any, idx: number) => {
+      let mStr = `Miolo ${idx + 1}: ${m.paginas || 0} pgs - ${m.papel} ${m.gramatura}`;
+      mStr += ` (${m.cores || 's/ cor'}${m.usa_pantone && m.pantone_cor ? ' + Pantone ' + m.pantone_cor : ''})`;
+      const acabsMiolo = [m.acabamento_1, m.acabamento_2].filter((a: any) => a && a !== 'Nenhum');
+      if (acabsMiolo.length > 0) mStr += ` [${acabsMiolo.join(', ')}]`;
+      parts.push(mStr);
+    });
+  }
+  return parts.join(" | ");
+};
+
 export default function PedidoPrintPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -229,11 +266,6 @@ export default function PedidoPrintPage() {
               // Usa o identificador real do banco (numero serial), com fallback para ordem
               const itemId = item.numero ?? item.ordem;
 
-              // Dimensões: verifica largura_mm/altura_mm (campo real do banco)
-              const largura = Number(item.largura_mm) || Number(item.largura) || 0;
-              const altura = Number(item.altura_mm) || Number(item.altura) || 0;
-              const temDimensoes = largura > 0 && altura > 0;
-
               return (
                 <tr
                   key={item.id}
@@ -247,43 +279,9 @@ export default function PedidoPrintPage() {
                       {item.descricao}
                     </p>
 
-                    {/* Formato/Dimensões: exibe apenas se largura E altura > 0 */}
-                    {temDimensoes && (
-                      <p className="text-[11px] mt-1">
-                        <span className="font-bold text-gray-500 uppercase">
-                          Formato:{" "}
-                        </span>
-                        Largura: {largura} x Altura: {altura}
-                        {item.unidade_medida ? ` ${item.unidade_medida}` : " mm"}
-                      </p>
-                    )}
-
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-[11px]">
-                      {!temDimensoes && item.formato && (
-                        <div>
-                          <span className="font-bold text-gray-500 uppercase">
-                            Formato:
-                          </span>{" "}
-                          {item.formato}
-                        </div>
-                      )}
-                      {item.substrato && (
-                        <div>
-                          <span className="font-bold text-gray-500 uppercase">
-                            Substrato:
-                          </span>{" "}
-                          {item.substrato}
-                        </div>
-                      )}
-                      {item.acabamentos && (
-                        <div className="col-span-2">
-                          <span className="font-bold text-gray-500 uppercase">
-                            Acabamentos:
-                          </span>{" "}
-                          {item.acabamentos}
-                        </div>
-                      )}
-                    </div>
+                    <p className="text-[11px] text-gray-600 mt-1 leading-relaxed">
+                      {buildSpecsString(item)}
+                    </p>
 
                     {item.descricao_tecnica && (
                       <p className="text-[11px] text-gray-600 mt-2 bg-gray-50 p-2 rounded border border-gray-100 whitespace-pre-wrap italic">
