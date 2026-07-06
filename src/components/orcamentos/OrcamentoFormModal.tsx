@@ -1220,9 +1220,15 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                                           variant="outline" 
                                           className="w-full h-8 text-[10px] bg-background hover:bg-accent text-muted-foreground mt-2" 
                                           onClick={() => {
-                                            if(Number(conc.valor_total_custo) > 0) {
-                                              updateItemBD(item.id, "fornecedor_valor_total", Number(conc.valor_total_custo));
-                                              updateItemBD(item.id, "total", Number(conc.valor_total_custo));
+                                            const custoForn = Number(conc.valor_total_custo) || 0;
+                                            const comissForn = Number(conc.comissao_valor) || 0;
+                                            if(custoForn > 0) {
+                                              updateItemBD(item.id, "fornecedor_valor_total", custoForn);
+                                              updateItemBD(item.id, "total", custoForn);
+                                              
+                                              // Converte o valor nominal da comissão em percentual sobre o custo/venda para preencher a Ficha do Item
+                                              const pct = comissForn > 0 ? (comissForn / custoForn) * 100 : 0;
+                                              updateItemBD(item.id, "comissao_lfa_percentual", Number(pct.toFixed(4)));
                                             }
                                           }} 
                                           disabled={isLocked || !(Number(conc.valor_total_custo) > 0)}
