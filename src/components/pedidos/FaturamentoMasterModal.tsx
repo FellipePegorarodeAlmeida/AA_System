@@ -69,6 +69,7 @@ export function FaturamentoMasterModal({ pedido, open, onOpenChange, onSuccess, 
     setPreviewParcelas([]);
     
     async function loadData() {
+      if (!pedido || !pedido.id) return;
       setLoadingDados(true);
       try {
         const modelo = pedido.modelo_negocio || pedido.modelo_operacao;
@@ -146,6 +147,7 @@ export function FaturamentoMasterModal({ pedido, open, onOpenChange, onSuccess, 
 
   useEffect(() => {
     async function checkNfParaCorrecao() {
+      if (!pedido || !pedido.id) return;
       if (modo !== "CORRIGIR" || !nfSelecionadaId) {
         setBloqueioCorrecao(null);
         setItensNfSelecionada([]);
