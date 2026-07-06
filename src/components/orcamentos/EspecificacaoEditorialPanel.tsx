@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -91,6 +92,39 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
         </TabsList>
 
         <TabsContent value="capa" className="pt-4">
+          <div className="space-y-4">
+            
+            {/* NOVO BLOCO COMPACTO: Formato e Orelhas */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end bg-background/50 p-3 rounded border border-border">
+              {/* Formato do Livro (4 colunas) */}
+              <div className="col-span-1 lg:col-span-4 grid gap-1.5">
+                <Label className="text-xs font-bold text-muted-foreground uppercase">Formato Fechado (mm)</Label>
+                <div className="flex gap-2">
+                  <Input type="number" placeholder="Largura" className="h-8 bg-background" value={value.formato_largura || ""} onChange={e => updateGeral('formato_largura', e.target.value)} disabled={disabled} />
+                  <span className="flex items-center text-muted-foreground text-xs">x</span>
+                  <Input type="number" placeholder="Altura" className="h-8 bg-background" value={value.formato_altura || ""} onChange={e => updateGeral('formato_altura', e.target.value)} disabled={disabled} />
+                </div>
+              </div>
+              
+              {/* Flag Orelha (3 colunas) */}
+              <div className="col-span-1 lg:col-span-3 flex items-center gap-2 pb-1.5">
+                <Switch id="flag-orelha" checked={capa.tem_orelha || false} onCheckedChange={v => updateCapa('tem_orelha', v)} disabled={disabled} />
+                <Label htmlFor="flag-orelha" className="text-xs font-bold text-muted-foreground uppercase cursor-pointer">Tem Orelha?</Label>
+              </div>
+
+              {/* Medidas da Orelha (5 colunas) - Aparece na mesma linha */}
+              {capa.tem_orelha && (
+                <div className="col-span-1 lg:col-span-5 grid gap-1.5">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase">Orelhas: Esq / Dir (mm)</Label>
+                  <div className="flex gap-2">
+                    <Input type="number" placeholder="Esq" className="h-8 bg-background" value={capa.orelha_esquerda || ""} onChange={e => updateCapa('orelha_esquerda', e.target.value)} disabled={disabled} />
+                    <span className="flex items-center text-muted-foreground text-xs">+</span>
+                    <Input type="number" placeholder="Dir" className="h-8 bg-background" value={capa.orelha_direita || ""} onChange={e => updateCapa('orelha_direita', e.target.value)} disabled={disabled} />
+                  </div>
+                </div>
+              )}
+            </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             
             {/* Papel e Capa Dura */}
@@ -289,45 +323,6 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
               </div>
             </div>
 
-            {/* Orelhas */}
-            <div className="space-y-3 col-span-full mt-4 p-4 border rounded-lg bg-card shadow-sm">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="tem_orelha"
-                  disabled={disabled}
-                  checked={capa.tem_orelha || false}
-                  onCheckedChange={(val) => updateCapa("tem_orelha", !!val)}
-                />
-                <Label htmlFor="tem_orelha" className="text-sm font-bold cursor-pointer">Possui Orelhas?</Label>
-              </div>
-              {capa.tem_orelha && (
-                <div className="flex flex-wrap gap-4 mt-3">
-                  <div className="grid gap-1.5">
-                    <Label className="text-xs text-muted-foreground">Orelha Esquerda (mm)</Label>
-                    <Input
-                      disabled={disabled}
-                      type="number"
-                      className="h-8 bg-background text-sm w-[150px]"
-                      placeholder="Ex: 80"
-                      value={capa.orelha_esquerda || ""}
-                      onChange={(e) => updateCapa("orelha_esquerda", e.target.value)}
-                    />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label className="text-xs text-muted-foreground">Orelha Direita (mm)</Label>
-                    <Input
-                      disabled={disabled}
-                      type="number"
-                      className="h-8 bg-background text-sm w-[150px]"
-                      placeholder="Ex: 80"
-                      value={capa.orelha_direita || ""}
-                      onChange={(e) => updateCapa("orelha_direita", e.target.value)}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
             {/* Observações / Campo Extra */}
             <div className="space-y-1.5 col-span-full mt-4">
               <Label className="text-xs">Observações / Campo Extra</Label>
@@ -339,6 +334,7 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
               />
             </div>
 
+          </div>
           </div>
         </TabsContent>
 
