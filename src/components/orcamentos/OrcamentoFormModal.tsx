@@ -115,7 +115,7 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
   async function carregarOrcamentoCompleto(orc: any) {
     setForm({
       cliente_id: orc.cliente_id,
-      modelo_operacao: orc.modelo_operacao,
+      modelo_operacao: "REPRESENTACAO", // Forçado (Desativação temporária de Revenda)
       titulo: orc.titulo,
       status: orc.status,
       condicao_pagamento_id: orc.condicao_pagamento_id,
@@ -817,7 +817,7 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                       <SelectContent>{clientes.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  <div className="grid gap-2">
+                  <div className="grid gap-2 hidden">
                     <Label>Tipo de Operação</Label>
                     <Select value={form.modelo_operacao || ""} onValueChange={v => setForm({ ...form, modelo_operacao: v })} disabled={isLocked}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
