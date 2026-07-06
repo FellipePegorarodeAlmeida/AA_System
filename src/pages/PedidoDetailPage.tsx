@@ -403,6 +403,9 @@ export default function PedidoDetailPage() {
     return `${datePart} ${timePart}`;
   };
 
+  const fornecedorNome = itens?.[0]?.fornecedores?.nome || itens?.[0]?.fornecedor?.nome || pedido?.itens?.[0]?.fornecedores?.nome;
+  const propostasUnicas = [...new Set(itens.map(i => i.fornecedor_numero_proposta).filter(Boolean))];
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-10">
       <div className="flex items-center gap-4">
@@ -562,6 +565,20 @@ export default function PedidoDetailPage() {
                   )}
                 </div>
               </div>
+              
+              {fornecedorNome && (
+                <div className="grid gap-1.5 md:col-span-2">
+                  <Label className="text-xs font-semibold text-muted-foreground">Fornecedor (Produção)</Label>
+                  <div className="h-9 flex items-center px-3 bg-indigo-50/50 rounded-md text-sm justify-between border border-indigo-100">
+                    <span className="font-bold text-indigo-900">{fornecedorNome}</span>
+                    {propostasUnicas.length === 1 && (
+                      <span className="text-indigo-600 font-medium text-xs">
+                        Proposta: {propostasUnicas[0]}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
               <div className="grid gap-1.5">
                 <Label className="text-xs font-semibold text-muted-foreground">Tipo de Prova</Label>
                 <Select value={pedido.tipo_prova || "Nenhuma"} onValueChange={(v) => setPedido({...pedido, tipo_prova: v})}>
@@ -674,9 +691,14 @@ export default function PedidoDetailPage() {
                     itens.map((item) => (
                       <tr key={item.id} className="hover:bg-muted/30 border-b last:border-0">
                         <td className="p-3">
-                          <div className="font-medium text-base flex items-center gap-2">
+                          <div className="font-medium text-base flex flex-wrap items-center gap-2">
                             {item.numero && <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded uppercase tracking-wider">Item #{item.numero}</span>}
                             <span>{item.descricao}</span>
+                            {propostasUnicas.length > 1 && item.fornecedor_numero_proposta && (
+                              <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">
+                                Proposta: {item.fornecedor_numero_proposta}
+                              </span>
+                            )}
                           </div>
                           <div className="mt-2 text-xs text-muted-foreground space-y-1">
                             {item.descricao_tecnica && <div><span className="font-semibold">Técnica:</span> {item.descricao_tecnica}</div>}

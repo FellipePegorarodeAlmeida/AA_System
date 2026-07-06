@@ -222,6 +222,8 @@ export default function PedidoPrintPage() {
     Array.from(new Set(itens.map((i) => i.fornecedor?.nome).filter(Boolean))).join(", ") ||
     "Não definido";
 
+  const propostasUnicas = [...new Set(itens.map(i => i.fornecedor_numero_proposta).filter(Boolean))];
+
   // Fonte de verdade do frete: modalidade de frete.
   const totalItens = itens.reduce((acc, item) => acc + (Number(item.total) || 0), 0);
   const comissaoLfa = Number(fechamento?.receita_bruta_lfa) || 0;
@@ -327,7 +329,10 @@ export default function PedidoPrintPage() {
             <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">
               Fornecedor / Produção
             </h2>
-            <p className="font-bold text-base">{fornecedorNome}</p>
+            <p className="font-bold text-base">
+              {fornecedorNome}
+              {propostasUnicas.length === 1 && ` - Proposta: ${propostasUnicas[0]}`}
+            </p>
           </div>
 
           <div className="pt-3 border-t border-gray-300">
@@ -385,9 +390,14 @@ export default function PedidoPrintPage() {
                     #{itemId}
                   </td>
                   <td className="py-3 text-left pr-4 align-top">
-                    <p className="font-bold text-base uppercase">
-                      {item.descricao}
-                    </p>
+                    <div className="font-bold text-base uppercase flex flex-wrap items-center gap-2">
+                      <span>{item.descricao}</span>
+                      {propostasUnicas.length > 1 && item.fornecedor_numero_proposta && (
+                        <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-300 normal-case tracking-normal">
+                          Proposta: {item.fornecedor_numero_proposta}
+                        </span>
+                      )}
+                    </div>
 
                     <p className="text-[11px] text-gray-600 mt-1 leading-relaxed whitespace-pre-line">
                       {buildSpecsString(item)}
