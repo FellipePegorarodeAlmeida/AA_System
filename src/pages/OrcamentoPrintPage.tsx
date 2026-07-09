@@ -308,6 +308,8 @@ export default function OrcamentoPrintPage() {
     ));
   };
 
+  console.log('DADOS_DA_PROPOSTA', itens);
+
   return (
     <div className="bg-white text-black min-h-screen font-sans p-10 print:p-0 print:m-0 w-full max-w-4xl mx-auto relative">
       <button
