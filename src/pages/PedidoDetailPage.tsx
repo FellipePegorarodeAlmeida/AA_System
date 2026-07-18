@@ -23,7 +23,7 @@ export default function PedidoDetailPage() {
   const [enderecos, setEnderecos] = useState<any[]>([]);
   const [contatos, setContatos] = useState<any[]>([]);
   const [modalidadesFrete, setModalidadesFrete] = useState<any[]>([]);
-  
+
   const [novaObservacao, setNovaObservacao] = useState("");
   const [loading, setLoading] = useState(true);
   const [savingHist, setSavingHist] = useState(false);
@@ -51,7 +51,7 @@ export default function PedidoDetailPage() {
         .maybeSingle();
 
       if (vwErr) throw vwErr;
-      
+
       const { data: rawPedido } = await supabase
         .from("pedidos")
         .select("contato_id, endereco_entrega_id, total, modalidade_frete_id, tipo_prova")
@@ -143,7 +143,7 @@ export default function PedidoDetailPage() {
       if (error) throw error;
       toast({ title: "Observação adicionada ao histórico" });
       setNovaObservacao("");
-      
+
       // Recarregar histórico
       const { data } = await supabase
         .from("pedido_historico")
@@ -180,7 +180,7 @@ export default function PedidoDetailPage() {
         .from("pedidos")
         .update(payload as any)
         .eq("id", id);
-      
+
       if (error) { console.error('Erro SUPABASE:', error); alert('Erro ao salvar no banco: ' + error.message); throw error; }
       toast({ title: "Pedido atualizado com sucesso" });
     } catch (err: any) {
@@ -230,8 +230,8 @@ export default function PedidoDetailPage() {
     setSavingItens(true);
     try {
       const itensPromises = itens.map(async (it) => {
-        const payload = { 
-          quantidade: Number(it.quantidade), 
+        const payload = {
+          quantidade: Number(it.quantidade),
           total: Number(it.total),
           fornecedor_numero_proposta: it.fornecedor_numero_proposta || null,
           status: it.status || 'ABERTO'
@@ -283,13 +283,13 @@ export default function PedidoDetailPage() {
       ].filter(Boolean).join(" | ");
     }
     const lines = [];
-    
+
     // --- Bloco Capa ---
     if (s.capa) {
       const capaParts = [];
       const capaLargura = s.formato_largura || item.largura_mm || '';
       const capaAltura = s.formato_altura || item.altura_mm || '';
-      
+
       let formatoStr = '';
       if (capaLargura && capaAltura) {
         formatoStr = `Formato Fechado: ${capaLargura} x ${capaAltura} mm`;
@@ -300,48 +300,48 @@ export default function PedidoDetailPage() {
         formatoStr += ` + Orelhas (Esq: ${oEsq}mm / Dir: ${oDir}mm)`;
       }
       if (formatoStr) capaParts.push(formatoStr);
-      
+
       let c = `Papel: ${s.capa.papel} ${s.capa.gramatura}`;
       capaParts.push(c);
-      
+
       const coresCapa = s.capa.cores || 's/ cor';
       const pantoneCapa = s.capa.usa_pantone && s.capa.pantone_cor ? ` + Pantone ${s.capa.pantone_cor}` : '';
       capaParts.push(`${coresCapa}${pantoneCapa}`);
-      
+
       if (s.capa.capa_dura) {
         capaParts.push(`Capa Dura (${s.capa.espessura_papelao})`);
       }
-      
+
       const acabsCapa = [];
       const cAcab1 = s.capa.acabamento1 || s.capa.acabamento_1;
       if (cAcab1 && cAcab1 !== 'Nenhum') acabsCapa.push(cAcab1);
-      
+
       const cAcab2 = s.capa.acabamento2 || s.capa.acabamento_2;
       if (cAcab2 && cAcab2 !== 'Nenhum') {
         if (cAcab2 === 'Hotstamping') {
-           const cor2 = s.capa.hotstamping2_cor || s.capa.acab_2_cor || '';
-           const med2 = s.capa.hotstamping2_medida || s.capa.acab_2_medida || '';
-           acabsCapa.push(`Hotstamping ${cor2} ${med2 ? '('+med2+')' : ''}`.trim());
+          const cor2 = s.capa.hotstamping2_cor || s.capa.acab_2_cor || '';
+          const med2 = s.capa.hotstamping2_medida || s.capa.acab_2_medida || '';
+          acabsCapa.push(`Hotstamping ${cor2} ${med2 ? '(' + med2 + ')' : ''}`.trim());
         } else {
-           acabsCapa.push(cAcab2);
+          acabsCapa.push(cAcab2);
         }
       }
-      
+
       const cAcab3 = s.capa.acabamento3 || s.capa.acabamento_3;
       if (cAcab3 && cAcab3 !== 'Nenhum') {
         if (cAcab3 === 'Hotstamping') {
-           const cor3 = s.capa.hotstamping3_cor || s.capa.acab_3_cor || '';
-           const med3 = s.capa.hotstamping3_medida || s.capa.acab_3_medida || '';
-           acabsCapa.push(`Hotstamping ${cor3} ${med3 ? '('+med3+')' : ''}`.trim());
+          const cor3 = s.capa.hotstamping3_cor || s.capa.acab_3_cor || '';
+          const med3 = s.capa.hotstamping3_medida || s.capa.acab_3_medida || '';
+          acabsCapa.push(`Hotstamping ${cor3} ${med3 ? '(' + med3 + ')' : ''}`.trim());
         } else {
-           acabsCapa.push(cAcab3);
+          acabsCapa.push(cAcab3);
         }
       }
-      
+
       if (acabsCapa.length > 0) {
         capaParts.push(`Acabamentos: [${acabsCapa.join(', ')}]`);
       }
-      
+
       lines.push(`▶ CAPA: ${capaParts.join(' | ')}`);
     }
 
@@ -349,7 +349,7 @@ export default function PedidoDetailPage() {
     if (s.miolos && Array.isArray(s.miolos)) {
       s.miolos.forEach((m: any, idx: number) => {
         const mioloParts = [];
-        
+
         const mLargura = m.formato_largura || '';
         const mAltura = m.formato_altura || '';
         if (mLargura && mAltura) {
@@ -359,33 +359,33 @@ export default function PedidoDetailPage() {
         } else if (item.largura_mm && item.altura_mm) {
           mioloParts.push(`Formato Fechado: ${item.largura_mm} x ${item.altura_mm} mm`);
         }
-        
+
         const papelNome = m.papel === 'Papel especial' && m.papel_especial_nome ? m.papel_especial_nome : m.papel;
         mioloParts.push(`Papel: ${papelNome} ${m.gramatura}`);
-        
+
         const coresMiolo = m.cores || 's/ cor';
         const pantoneMiolo = m.usa_pantone && m.pantone_cor ? ` + Pantone ${m.pantone_cor}` : '';
         mioloParts.push(`${coresMiolo}${pantoneMiolo}`);
-        
+
         const acabsMiolo = [];
         const mAcab1 = m.acabamento1 || m.acabamento_1;
         if (mAcab1 && mAcab1 !== 'Nenhum') acabsMiolo.push(mAcab1);
-        
+
         const mAcab2 = m.acabamento2 || m.acabamento_2;
         if (mAcab2 && mAcab2 !== 'Nenhum') {
           if (mAcab2 === 'Hotstamping') {
             const mCor = m.hotstamping_cor || m.acab_2_cor || '';
             const mMed = m.hotstamping_medida || m.acab_2_medida || '';
-            acabsMiolo.push(`Hotstamping ${mCor} ${mMed ? '('+mMed+')' : ''}`.trim());
+            acabsMiolo.push(`Hotstamping ${mCor} ${mMed ? '(' + mMed + ')' : ''}`.trim());
           } else {
             acabsMiolo.push(mAcab2);
           }
         }
-        
+
         if (acabsMiolo.length > 0) {
           mioloParts.push(`Acabamentos: [${acabsMiolo.join(', ')}]`);
         }
-        
+
         lines.push(`▶ MIOLO ${idx + 1}: ${m.paginas || 0} pgs | ${mioloParts.join(' | ')}`);
       });
     }
@@ -398,7 +398,7 @@ export default function PedidoDetailPage() {
       if (s.regra_encadernacao === 'Wire-O' && s.wireo_cor) enc += ` (${s.wireo_cor})`;
       finalizacaoParts.push(enc.trim());
     }
-    
+
     if (s.grupo_kit) {
       finalizacaoParts.push(`Grupo Kit: ${s.grupo_kit}`);
     }
@@ -408,7 +408,7 @@ export default function PedidoDetailPage() {
     if (s.shrink_pacote) embalagem.push('Shrink Pacote');
     if (s.caixa_papelao) embalagem.push('Caixa de Papelão');
     if (s.entrega_pallet) embalagem.push('Pallet');
-    
+
     if (embalagem.length > 0) {
       finalizacaoParts.push(`Embalagem: ${embalagem.join(', ')}`);
     }
@@ -450,7 +450,7 @@ export default function PedidoDetailPage() {
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold tracking-tight">Pedido #{pedido.numero}</h1>
               {pedido.numero_nf && (
-                <button 
+                <button
                   onClick={() => { setPreviewReadOnly(true); setPreviewOpen(true); }}
                   className="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 transition-colors text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-bold shadow-sm cursor-pointer"
                   title="Visualizar faturamento"
@@ -469,7 +469,7 @@ export default function PedidoDetailPage() {
             <p className="text-sm text-muted-foreground mt-1">Detalhes operacionais e acompanhamento do pedido.</p>
           </div>
           <div className="flex items-center gap-3">
-            <Button 
+            <Button
               onClick={() => navigate(`/pedidos/${pedido.id}/imprimir`)}
               className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
             >
@@ -493,13 +493,13 @@ export default function PedidoDetailPage() {
                 Cliente
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-border/50">
               <div className="grid gap-1.5">
                 <Label className="text-xs uppercase text-muted-foreground font-semibold">Contato do Cliente</Label>
-                <Select 
-                  value={pedido.contato_id || "none"} 
-                  onValueChange={(v) => setPedido({...pedido, contato_id: v === "none" ? null : v})}
+                <Select
+                  value={pedido.contato_id || "none"}
+                  onValueChange={(v) => setPedido({ ...pedido, contato_id: v === "none" ? null : v })}
                 >
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Selecione o contato..." />
@@ -514,12 +514,12 @@ export default function PedidoDetailPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="grid gap-1.5">
                 <Label className="text-xs uppercase text-muted-foreground font-semibold">Endereço de Entrega</Label>
-                <Select 
-                  value={pedido.endereco_entrega_id || "none"} 
-                  onValueChange={(v) => setPedido({...pedido, endereco_entrega_id: v === "none" ? null : v})}
+                <Select
+                  value={pedido.endereco_entrega_id || "none"}
+                  onValueChange={(v) => setPedido({ ...pedido, endereco_entrega_id: v === "none" ? null : v })}
                 >
                   <SelectTrigger className="h-9 text-left">
                     <div className="line-clamp-1">
@@ -547,11 +547,11 @@ export default function PedidoDetailPage() {
               <div className="w-2 h-2 rounded-full bg-blue-500" />
               Dados do Trabalho
             </h3>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div className="grid gap-1.5">
                 <Label className="text-xs font-semibold text-muted-foreground">Status do Pedido (Auto)</Label>
-                <div className="h-9 flex items-center px-3 bg-slate-100 text-slate-700 rounded-md text-[10px] font-black uppercase tracking-wider border border-slate-200">
+                <div className="h-9 flex items-center px-3 bg-slate-100 text-slate-700 rounded-md text-[10px] font-black uppercase tracking-wider border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
                   {(pedido.status || "ABERTO").replace(/_/g, " ")}
                 </div>
               </div>
@@ -569,11 +569,11 @@ export default function PedidoDetailPage() {
               </div>
               <div className="grid gap-1.5">
                 <Label className="text-xs font-semibold text-muted-foreground">Previsão Entrega</Label>
-                <Input 
-                  type="date" 
-                  className="h-9" 
-                  value={pedido.previsao_entrega ? pedido.previsao_entrega.split('T')[0] : ""} 
-                  onChange={(e) => setPedido({...pedido, previsao_entrega: e.target.value})}
+                <Input
+                  type="date"
+                  className="h-9"
+                  value={pedido.previsao_entrega ? pedido.previsao_entrega.split('T')[0] : ""}
+                  onChange={(e) => setPedido({ ...pedido, previsao_entrega: e.target.value })}
                 />
               </div>
               <div className="grid gap-1.5 md:col-span-2">
@@ -587,7 +587,7 @@ export default function PedidoDetailPage() {
                   )}
                 </div>
               </div>
-              
+
               {fornecedorNome && (
                 <div className="grid gap-1.5 md:col-span-2">
                   <Label className="text-xs font-semibold text-muted-foreground">Fornecedor (Produção)</Label>
@@ -603,7 +603,7 @@ export default function PedidoDetailPage() {
               )}
               <div className="grid gap-1.5">
                 <Label className="text-xs font-semibold text-muted-foreground">Tipo de Prova</Label>
-                <Select value={pedido.tipo_prova || "Nenhuma"} onValueChange={(v) => setPedido({...pedido, tipo_prova: v})}>
+                <Select value={pedido.tipo_prova || "Nenhuma"} onValueChange={(v) => setPedido({ ...pedido, tipo_prova: v })}>
                   <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Nenhuma">Nenhuma</SelectItem>
@@ -615,7 +615,7 @@ export default function PedidoDetailPage() {
               </div>
               <div className="grid gap-1.5">
                 <Label className="text-xs font-semibold text-muted-foreground">Modalidade Frete</Label>
-                <Select value={pedido.modalidade_frete_id || "none"} onValueChange={(v) => setPedido({...pedido, modalidade_frete_id: v === "none" ? null : v})}>
+                <Select value={pedido.modalidade_frete_id || "none"} onValueChange={(v) => setPedido({ ...pedido, modalidade_frete_id: v === "none" ? null : v })}>
                   <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Não informada</SelectItem>
@@ -627,38 +627,38 @@ export default function PedidoDetailPage() {
               </div>
               <div className="grid gap-1.5 md:col-span-4 mt-2">
                 <Label className="text-xs font-semibold text-muted-foreground">Observações Operacionais (Aparecem na OP)</Label>
-                <Textarea 
-                  className="text-sm min-h-[80px]" 
+                <Textarea
+                  className="text-sm min-h-[80px]"
                   placeholder="Adicione notas operacionais do pedido..."
                   value={pedido.observacoes_operacionais || ""}
-                  onChange={(e) => setPedido({...pedido, observacoes_operacionais: e.target.value})}
+                  onChange={(e) => setPedido({ ...pedido, observacoes_operacionais: e.target.value })}
                 />
               </div>
             </div>
-            
+
             <div className="pt-4 flex justify-between items-center border-t border-border/50 mt-4">
               <div className="flex gap-4">
                 <div className="flex items-center gap-2">
                   <Label className="text-xs font-semibold text-muted-foreground">Número NF</Label>
-                  <Input 
-                    className="h-8 text-xs w-32" 
+                  <Input
+                    className="h-8 text-xs w-32"
                     placeholder="Ex: 12345"
-                    value={pedido.numero_nf || ""} 
-                    onChange={(e) => setPedido({...pedido, numero_nf: e.target.value})}
+                    value={pedido.numero_nf || ""}
+                    onChange={(e) => setPedido({ ...pedido, numero_nf: e.target.value })}
                   />
                 </div>
                 <div className="flex items-center gap-2">
                   <Label className="text-xs font-semibold text-muted-foreground">Data NF</Label>
-                  <Input 
-                    type="date" 
-                    className="h-8 text-xs w-36" 
-                    value={pedido.data_emissao_nf ? pedido.data_emissao_nf.split('T')[0] : ""} 
-                    onChange={(e) => setPedido({...pedido, data_emissao_nf: e.target.value})}
+                  <Input
+                    type="date"
+                    className="h-8 text-xs w-36"
+                    value={pedido.data_emissao_nf ? pedido.data_emissao_nf.split('T')[0] : ""}
+                    onChange={(e) => setPedido({ ...pedido, data_emissao_nf: e.target.value })}
                   />
                 </div>
-                <Button 
-                  onClick={handleGerarFaturamento} 
-                  size="sm" 
+                <Button
+                  onClick={handleGerarFaturamento}
+                  size="sm"
                   variant="outline"
                   className="h-8 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200"
                 >
@@ -683,9 +683,9 @@ export default function PedidoDetailPage() {
                 Itens do Pedido ({itens.length})
               </h3>
               {itensDirty && (
-                <Button 
-                  size="sm" 
-                  onClick={handleSaveItensOverrun} 
+                <Button
+                  size="sm"
+                  onClick={handleSaveItensOverrun}
                   disabled={savingItens}
                   className="bg-amber-500 hover:bg-amber-600 text-white"
                 >
@@ -730,7 +730,7 @@ export default function PedidoDetailPage() {
                             </p>
                             {item.observacoes_tecnicas && <div><span className="font-semibold">Obs:</span> {item.observacoes_tecnicas}</div>}
                           </div>
-                          
+
                           <div className="mt-3 flex items-center gap-2">
                             <span className="text-xs font-semibold text-muted-foreground uppercase">Nº Proposta Fornecedor:</span>
                             <Input
@@ -746,7 +746,7 @@ export default function PedidoDetailPage() {
                             value={item.status || "ABERTO"}
                             onValueChange={(v) => handleStatusLocalChange(item.id, v)}
                           >
-                            <SelectTrigger className="h-8 text-[10px] font-bold uppercase bg-slate-50 border-slate-200">
+                            <SelectTrigger className="h-8 text-[10px] font-bold uppercase bg-background border-input text-foreground">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -795,10 +795,10 @@ export default function PedidoDetailPage() {
             <div className="w-3 h-3 rounded-full bg-emerald-500" />
             Fechamento e Financeiro
           </h2>
-          <PedidoFechamentoEditor 
-            pedido={pedido} 
-            fechamento={fechamento} 
-            onUpdateSuccess={loadData} 
+          <PedidoFechamentoEditor
+            pedido={pedido}
+            fechamento={fechamento}
+            onUpdateSuccess={loadData}
           />
         </div>
 
@@ -808,13 +808,13 @@ export default function PedidoDetailPage() {
             <div className="w-2 h-2 rounded-full bg-slate-400" />
             Histórico do Pedido
           </h2>
-          
+
           <Card>
             <CardContent className="p-4 flex gap-2 items-end">
               <div className="flex-1 space-y-1.5">
                 <label className="text-sm font-semibold text-muted-foreground">Nova Observação</label>
-                <Input 
-                  placeholder="Digite o que aconteceu..." 
+                <Input
+                  placeholder="Digite o que aconteceu..."
                   value={novaObservacao}
                   onChange={(e) => setNovaObservacao(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleAddHistorico(); }}
