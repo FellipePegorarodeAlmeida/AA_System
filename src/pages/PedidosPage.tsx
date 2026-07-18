@@ -163,10 +163,21 @@ export default function PedidosPage() {
             }}
           >
             <option value="TODOS">Todos os Status</option>
-            <option value="ABERTO">Aberto</option>
-            <option value="EM_PRODUCAO">Em Produção</option>
-            <option value="CONCLUIDO">Concluído</option>
-            <option value="CANCELADO">Cancelado</option>
+            <option value="ABERTO">00 - Aberto</option>
+            <option value="AGUARDANDO_PROVA">01 - Ag. Prova</option>
+            <option value="EM_PROVA_FISICA">02.1 - Prova Física</option>
+            <option value="EM_PROVA_VIRTUAL">02.2 - Prova Virtual</option>
+            <option value="AGUARDANDO_TROCA_ARQUIVO">03 - Ag. Troca Arquivo</option>
+            <option value="PRODUCAO_LIBERADA">04 - Prod. Liberada</option>
+            <option value="EM_IMPRESSAO">05 - Em Impressão</option>
+            <option value="CAPA_IMPRESSA_FALTA_MIOLO">05.1 - Capa Impressa</option>
+            <option value="MIOLO_IMPRESSO_FALTA_CAPA">05.2 - Miolo Impresso</option>
+            <option value="EM_ACABAMENTO_INTERNO">06 - Em Acabamento Int.</option>
+            <option value="EM_TERCEIRO">07 - Em Terceiro</option>
+            <option value="FINALIZADO_AG_EXPEDICAO">08 - Finalizado / Ag. Exp.</option>
+            <option value="EM_TRANSPORTE">09 - Em Transporte</option>
+            <option value="ENTREGUE">10 - Entregue</option>
+            <option value="CANCELADO">999 - Cancelado</option>
           </select>
         </div>
       </div>
