@@ -226,9 +226,6 @@ export default function PedidoPrintPage() {
 
   // Fonte de verdade do frete: modalidade de frete.
   const totalItens = itens.reduce((acc, item) => acc + (Number(item.total) || 0), 0);
-  const comissaoLfa = Number(fechamento?.receita_bruta_lfa) || 0;
-  // Total = Itens. A Comissão LFA está embutida no preço dos itens e
-  // é exibida apenas como linha informativa, sem ser somada novamente.
   const totalOrdem = totalItens;
 
   return (
@@ -467,19 +464,9 @@ export default function PedidoPrintPage() {
                 {formatMoney(totalItens)}
               </span>
             </div>
-
-            {/* Comissão LFA */}
-            <div>
-              <span className="block text-[10px] text-gray-500 uppercase font-bold">
-                Comissão AA (Bruta)
-              </span>
-              <span className="font-semibold text-xs">
-                {formatMoney(comissaoLfa)}
-              </span>
-            </div>
           </div>
 
-          {/* Total final: Itens. LFA informativa, não entra na conta. */}
+          {/* Total final */}
           <div className="border-t-2 border-black pt-2 mt-2">
             <span className="block text-[10px] text-gray-500 uppercase font-bold">
               Total da NF (Itens)
