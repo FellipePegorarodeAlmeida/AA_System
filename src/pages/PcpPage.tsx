@@ -58,7 +58,7 @@ export default function PcpPage() {
               <table className="w-full text-sm text-left">
                 <thead className="bg-muted/20 text-muted-foreground uppercase text-xs">
                   <tr>
-                    <th className="p-3 w-16">Ped.</th>
+                    <th className="p-3 w-16">Item</th>
                     <th className="p-3">Item / Cliente</th>
                     <th className="p-3 w-24">Qtd</th>
                     <th className="p-3 w-56">Status (PCP)</th>
@@ -69,11 +69,11 @@ export default function PcpPage() {
                   {listaItens.map((item: any) => (
                     <tr key={item.item_id} className="hover:bg-muted/30 transition-colors">
                       <td className="p-3 font-black text-slate-500 align-top">
-                        #{item.pedido_numero}
+                        #{item.item_numero}
                       </td>
                       <td className="p-3 align-top">
                         <div className="font-bold text-foreground">{item.item_descricao}</div>
-                        <div className="text-xs text-muted-foreground mt-1">Item #{item.item_numero} • {item.cliente_nome}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Pedido #{item.pedido_numero} • {item.cliente_nome}</div>
                       </td>
                       <td className="p-3 font-semibold align-top">{item.quantidade || 0}</td>
                       <td className="p-3 align-top">
