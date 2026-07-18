@@ -31,6 +31,7 @@ import OrcamentoPrintPage from "./pages/OrcamentoPrintPage";
 import SolicitacaoPrintPage from "@/pages/orcamentos/SolicitacaoPrintPage";
 import NotasFiscaisPage from "./pages/NotasFiscaisPage";
 import DashboardComercialPage from "./pages/DashboardComercialPage";
+import PcpPage from "./pages/PcpPage";
 import NotFound from "./pages/NotFound.tsx";
 import { AuthGuard } from "./components/auth/AuthGuard";
 import LoginPage from "./pages/LoginPage";
@@ -63,6 +64,7 @@ const App = () => (
               path="/pedidos"
               element={<PedidosPage />}
             />
+            <Route path="/pcp" element={<PcpPage />} />
             <Route
               path="/pedidos/:id"
               element={<PedidoDetailPage />}

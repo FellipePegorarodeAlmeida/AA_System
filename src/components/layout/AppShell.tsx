@@ -16,6 +16,7 @@ import {
   CreditCard,
   LogOut,
   BarChart3,
+  Factory,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ const navGroups: NavGroup[] = [
       { to: "/dashboard-comercial", label: "Análise Comercial", icon: BarChart3 },
       { to: "/orcamentos", label: "Orçamentos", icon: FileText },
       { to: "/pedidos", label: "Pedidos", icon: ShoppingCart },
+      { to: "/pcp", label: "PCP / Produção", icon: Factory },
       { to: "/notas-fiscais", label: "Notas Fiscais", icon: Receipt },
     ],
   },
