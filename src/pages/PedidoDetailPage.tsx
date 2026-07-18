@@ -215,6 +215,17 @@ export default function PedidoDetailPage() {
     setItensDirty(true);
   }
 
+  function handleStatusLocalChange(itemId: string, novoStatus: string) {
+    const novosItens = itens.map(it => {
+      if (it.id === itemId) {
+        return { ...it, status: novoStatus };
+      }
+      return it;
+    });
+    setItens(novosItens);
+    setItensDirty(true);
+  }
+
   async function handleSaveItensOverrun() {
     setSavingItens(true);
     try {
@@ -222,7 +233,8 @@ export default function PedidoDetailPage() {
         const payload = { 
           quantidade: Number(it.quantidade), 
           total: Number(it.total),
-          fornecedor_numero_proposta: it.fornecedor_numero_proposta || null
+          fornecedor_numero_proposta: it.fornecedor_numero_proposta || null,
+          status: it.status || 'ABERTO'
         };
         console.log(`Payload Item (pedido_itens) ${it.id}:`, payload);
         const { error } = await supabase.from("pedido_itens").update(payload as any).eq("id", it.id);
@@ -538,21 +550,10 @@ export default function PedidoDetailPage() {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div className="grid gap-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground">Status</Label>
-                <Select 
-                  value={pedido.status} 
-                  onValueChange={(v) => setPedido({...pedido, status: v})}
-                >
-                  <SelectTrigger className="h-9 text-xs font-bold uppercase">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ABERTO">Aberto</SelectItem>
-                    <SelectItem value="EM_PRODUCAO">Em Produção</SelectItem>
-                    <SelectItem value="CONCLUIDO">Concluído</SelectItem>
-                    <SelectItem value="CANCELADO">Cancelado</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label className="text-xs font-semibold text-muted-foreground">Status do Pedido (Auto)</Label>
+                <div className="h-9 flex items-center px-3 bg-slate-100 text-slate-700 rounded-md text-[10px] font-black uppercase tracking-wider border border-slate-200">
+                  {(pedido.status || "ABERTO").replace(/_/g, " ")}
+                </div>
               </div>
               <div className="grid gap-1.5">
                 <Label className="text-xs font-semibold text-muted-foreground">Operação</Label>
@@ -698,6 +699,7 @@ export default function PedidoDetailPage() {
                 <thead className="bg-muted/50 text-muted-foreground uppercase text-xs">
                   <tr>
                     <th className="p-3">Descrição</th>
+                    <th className="p-3">Status</th>
                     <th className="p-3">Qtd</th>
                     <th className="p-3">Vlr Unitário</th>
                     <th className="p-3">Total</th>
@@ -738,6 +740,33 @@ export default function PedidoDetailPage() {
                               onChange={(e) => handlePropostaLocalChange(item.id, e.target.value)}
                             />
                           </div>
+                        </td>
+                        <td className="p-3 align-top w-48">
+                          <Select
+                            value={item.status || "ABERTO"}
+                            onValueChange={(v) => handleStatusLocalChange(item.id, v)}
+                          >
+                            <SelectTrigger className="h-8 text-[10px] font-bold uppercase bg-slate-50 border-slate-200">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ABERTO">00 - Aberto</SelectItem>
+                                <SelectItem value="AGUARDANDO_PROVA">01 - Aguardando Prova</SelectItem>
+                                <SelectItem value="EM_PROVA_FISICA">02.1 - Prova Física (Cli)</SelectItem>
+                                <SelectItem value="EM_PROVA_VIRTUAL">02.2 - Prova Virtual (Cli)</SelectItem>
+                                <SelectItem value="AGUARDANDO_TROCA_ARQUIVO">03 - Ag. Troca Arquivo</SelectItem>
+                                <SelectItem value="PRODUCAO_LIBERADA">04 - Produção Liberada</SelectItem>
+                                <SelectItem value="EM_IMPRESSAO">05 - Em Impressão</SelectItem>
+                                <SelectItem value="CAPA_IMPRESSA_FALTA_MIOLO">05.1 - Capa Impressa</SelectItem>
+                                <SelectItem value="MIOLO_IMPRESSO_FALTA_CAPA">05.2 - Miolo Impresso</SelectItem>
+                                <SelectItem value="EM_ACABAMENTO_INTERNO">06 - Em Acabamento Int.</SelectItem>
+                                <SelectItem value="EM_TERCEIRO">07 - Em Terceiro</SelectItem>
+                                <SelectItem value="FINALIZADO_AG_EXPEDICAO">08 - Finalizado / Ag. Exp.</SelectItem>
+                                <SelectItem value="EM_TRANSPORTE">09 - Em Transporte</SelectItem>
+                                <SelectItem value="ENTREGUE">10 - Entregue</SelectItem>
+                                <SelectItem value="CANCELADO">999 - Cancelado</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </td>
                         <td className="p-3 align-top w-32">
                           <Input

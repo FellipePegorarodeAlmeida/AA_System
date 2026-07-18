@@ -24,8 +24,21 @@ const formatDate = (dateStr: string | null | undefined) => {
 const getStatusColor = (status: string | null | undefined) => {
   if (!status) return "bg-slate-100 text-slate-800";
   switch (status.toUpperCase()) {
-    case "ABERTO": return "bg-blue-100 text-blue-800";
-    case "EM_PRODUCAO": return "bg-amber-100 text-amber-900";
+    case "ABERTO": return "bg-slate-100 text-slate-800";
+    case "AGUARDANDO_PROVA":
+    case "EM_PROVA_FISICA":
+    case "EM_PROVA_VIRTUAL":
+    case "AGUARDANDO_TROCA_ARQUIVO": return "bg-orange-100 text-orange-800";
+    case "PRODUCAO_LIBERADA": return "bg-blue-100 text-blue-800";
+    case "EM_PRODUCAO": 
+    case "EM_IMPRESSAO":
+    case "CAPA_IMPRESSA_FALTA_MIOLO":
+    case "MIOLO_IMPRESSO_FALTA_CAPA":
+    case "EM_ACABAMENTO_INTERNO":
+    case "EM_TERCEIRO": return "bg-amber-100 text-amber-900";
+    case "FINALIZADO_AG_EXPEDICAO":
+    case "EM_TRANSPORTE": return "bg-indigo-100 text-indigo-800";
+    case "ENTREGUE":
     case "CONCLUIDO": return "bg-emerald-100 text-emerald-800";
     case "CANCELADO": return "bg-destructive/10 text-destructive";
     default: return "bg-slate-100 text-slate-800";
