@@ -226,6 +226,17 @@ export default function PedidoDetailPage() {
     setItensDirty(true);
   }
 
+  function handleDataLocalChange(itemId: string, novaData: string) {
+    const novosItens = itens.map(it => {
+      if (it.id === itemId) {
+        return { ...it, previsao_entrega: novaData };
+      }
+      return it;
+    });
+    setItens(novosItens);
+    setItensDirty(true);
+  }
+
   async function handleSaveItensOverrun() {
     setSavingItens(true);
     try {
@@ -234,7 +245,8 @@ export default function PedidoDetailPage() {
           quantidade: Number(it.quantidade),
           total: Number(it.total),
           fornecedor_numero_proposta: it.fornecedor_numero_proposta || null,
-          status: it.status || 'ABERTO'
+          status: it.status || 'ABERTO',
+          previsao_entrega: it.previsao_entrega || null
         };
         console.log(`Payload Item (pedido_itens) ${it.id}:`, payload);
         const { error } = await supabase.from("pedido_itens").update(payload as any).eq("id", it.id);
@@ -700,6 +712,7 @@ export default function PedidoDetailPage() {
                   <tr>
                     <th className="p-3">Descrição</th>
                     <th className="p-3">Status</th>
+                    <th className="p-3">Previsão</th>
                     <th className="p-3">Qtd</th>
                     <th className="p-3">Vlr Unitário</th>
                     <th className="p-3">Total</th>
@@ -767,6 +780,14 @@ export default function PedidoDetailPage() {
                                 <SelectItem value="CANCELADO">999 - Cancelado</SelectItem>
                             </SelectContent>
                           </Select>
+                        </td>
+                        <td className="p-3 align-top w-40">
+                          <Input 
+                            type="date"
+                            className="h-8 text-xs"
+                            value={item.previsao_entrega ? item.previsao_entrega.split('T')[0] : ""}
+                            onChange={(e) => handleDataLocalChange(item.id, e.target.value)}
+                          />
                         </td>
                         <td className="p-3 align-top w-32">
                           <Input
