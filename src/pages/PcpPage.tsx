@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useItensPcp, useUpdateItemPcp } from "@/hooks/use-pcp";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Factory, CalendarClock, ChevronDown, ChevronRight, Printer, Download } from "lucide-react";
 
 export default function PcpPage() {
+  const navigate = useNavigate();
   const { data: itens, isLoading } = useItensPcp();
   const { mutate: updateItem } = useUpdateItemPcp();
 
@@ -22,14 +24,9 @@ export default function PcpPage() {
   }, [itens]);
 
   const [expandedSuppliers, setExpandedSuppliers] = useState<Record<string, boolean>>({});
-  const [printTarget, setPrintTarget] = useState<'ALL' | string | null>(null);
 
   const handlePrint = (target: 'ALL' | string) => {
-    setPrintTarget(target);
-    setTimeout(() => {
-      window.print();
-      setPrintTarget(null);
-    }, 150);
+    navigate(`/pcp/imprimir?fornecedor=${encodeURIComponent(target)}`);
   };
 
   const handleExportCSV = (dados: any[], nomeArquivo: string) => {
@@ -81,7 +78,7 @@ export default function PcpPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <PageHeader 
           title="PCP / Produção" 
           description="Controle de itens em linha de produção agrupados por fornecedor." 
@@ -100,12 +97,7 @@ export default function PcpPage() {
 
       <div className="space-y-8">
         {Object.entries(itensAgrupados).map(([fornecedor, listaItens]: [string, any]) => (
-          <div 
-            key={fornecedor} 
-            className={`bg-card border border-border rounded-lg shadow-sm overflow-hidden ${
-              printTarget && printTarget !== 'ALL' && printTarget !== fornecedor ? 'hidden print:hidden' : ''
-            }`}
-          >
+          <div key={fornecedor} className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
             <div className="bg-muted/50 p-3 border-b flex items-center justify-between group">
               <div 
                 className="flex items-center gap-3 cursor-pointer flex-1"
@@ -122,7 +114,7 @@ export default function PcpPage() {
                   {listaItens.length} itens
                 </span>
               </div>
-              <div className="flex gap-2 print:hidden">
+              <div className="flex gap-2">
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -177,42 +169,38 @@ export default function PcpPage() {
                         </td>
                         <td className="p-3 font-semibold align-top">{item.quantidade || 0}</td>
                         <td className="p-3 align-top">
-                          <div className="print:hidden">
-                            <Select
-                              value={item.item_status || "ABERTO"}
-                              onValueChange={(v) => handleStatusChange(item.item_id, v)}
-                            >
-                              <SelectTrigger className="h-8 text-[10px] font-bold uppercase bg-background border-input text-foreground">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                  <SelectItem value="ABERTO">00 - Aberto</SelectItem>
-                                  <SelectItem value="AGUARDANDO_PROVA">01 - Ag. Prova</SelectItem>
-                                  <SelectItem value="EM_PROVA_FISICA">02.1 - Prova Física</SelectItem>
-                                  <SelectItem value="EM_PROVA_VIRTUAL">02.2 - Prova Virtual</SelectItem>
-                                  <SelectItem value="AGUARDANDO_TROCA_ARQUIVO">03 - Ag. Troca Arquivo</SelectItem>
-                                  <SelectItem value="PRODUCAO_LIBERADA">04 - Prod. Liberada</SelectItem>
-                                  <SelectItem value="EM_IMPRESSAO">05 - Em Impressão</SelectItem>
-                                  <SelectItem value="CAPA_IMPRESSA_FALTA_MIOLO">05.1 - Capa Impressa</SelectItem>
-                                  <SelectItem value="MIOLO_IMPRESSO_FALTA_CAPA">05.2 - Miolo Impresso</SelectItem>
-                                  <SelectItem value="EM_ACABAMENTO_INTERNO">06 - Em Acabamento</SelectItem>
-                                  <SelectItem value="EM_TERCEIRO">07 - Em Terceiro</SelectItem>
-                                  <SelectItem value="FINALIZADO_AG_EXPEDICAO">08 - Ag. Expedição</SelectItem>
-                                  <SelectItem value="EM_TRANSPORTE">09 - Em Transporte</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <span className="hidden print:inline font-bold uppercase text-[10px]">{item.item_status?.replace(/_/g, " ") || "ABERTO"}</span>
+                          <Select
+                            value={item.item_status || "ABERTO"}
+                            onValueChange={(v) => handleStatusChange(item.item_id, v)}
+                          >
+                            <SelectTrigger className="h-8 text-[10px] font-bold uppercase bg-background border-input text-foreground">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ABERTO">00 - Aberto</SelectItem>
+                                <SelectItem value="AGUARDANDO_PROVA">01 - Ag. Prova</SelectItem>
+                                <SelectItem value="EM_PROVA_FISICA">02.1 - Prova Física</SelectItem>
+                                <SelectItem value="EM_PROVA_VIRTUAL">02.2 - Prova Virtual</SelectItem>
+                                <SelectItem value="AGUARDANDO_TROCA_ARQUIVO">03 - Ag. Troca Arquivo</SelectItem>
+                                <SelectItem value="PRODUCAO_LIBERADA">04 - Prod. Liberada</SelectItem>
+                                <SelectItem value="EM_IMPRESSAO">05 - Em Impressão</SelectItem>
+                                <SelectItem value="CAPA_IMPRESSA_FALTA_MIOLO">05.1 - Capa Impressa</SelectItem>
+                                <SelectItem value="MIOLO_IMPRESSO_FALTA_CAPA">05.2 - Miolo Impresso</SelectItem>
+                                <SelectItem value="EM_ACABAMENTO_INTERNO">06 - Em Acabamento</SelectItem>
+                                <SelectItem value="EM_TERCEIRO">07 - Em Terceiro</SelectItem>
+                                <SelectItem value="FINALIZADO_AG_EXPEDICAO">08 - Ag. Expedição</SelectItem>
+                                <SelectItem value="EM_TRANSPORTE">09 - Em Transporte</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </td>
                         <td className="p-3 align-top">
                           <div className="flex items-center gap-2">
                             <Input 
                               type="date" 
-                              className="h-8 text-xs font-medium print:hidden"
+                              className="h-8 text-xs font-medium"
                               value={item.data_entrega_efetiva ? item.data_entrega_efetiva.split('T')[0] : ""}
                               onChange={(e) => handleDateChange(item.item_id, e.target.value)}
                             />
-                            <span className="hidden print:inline text-xs">{formatDate(item.data_entrega_efetiva)}</span>
                           </div>
                         </td>
                       </tr>
@@ -229,9 +217,6 @@ export default function PcpPage() {
             <p>Nenhum item em produção no momento.</p>
           </div>
         )}
-      </div>
-      <div className="hidden print:block fixed bottom-0 left-0 w-full text-center text-[10px] text-gray-500 pt-4 border-t border-gray-300">
-        Relatório de PCP gerado em: {new Date().toLocaleString("pt-BR")}
       </div>
     </div>
   );
