@@ -3,7 +3,8 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { useItensPcp, useUpdateItemPcp } from "@/hooks/use-pcp";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Factory, CalendarClock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Factory, CalendarClock, ChevronDown, ChevronRight, Printer } from "lucide-react";
 
 export default function PcpPage() {
   const { data: itens, isLoading } = useItensPcp();
@@ -19,6 +20,15 @@ export default function PcpPage() {
       return acc;
     }, {});
   }, [itens]);
+
+  const [expandedSuppliers, setExpandedSuppliers] = useState<Record<string, boolean>>({});
+
+  const toggleSupplier = (fornecedor: string) => {
+    setExpandedSuppliers(prev => ({
+      ...prev,
+      [fornecedor]: prev[fornecedor] === false ? true : false
+    }));
+  };
 
   const handleStatusChange = (id: string, novoStatus: string) => {
     updateItem({ id, data: { status: novoStatus } });
@@ -46,77 +56,109 @@ export default function PcpPage() {
       <div className="space-y-8">
         {Object.entries(itensAgrupados).map(([fornecedor, listaItens]: [string, any]) => (
           <div key={fornecedor} className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
-            <div className="bg-muted/50 p-4 border-b flex items-center gap-3">
-              <Factory className="h-5 w-5 text-indigo-500" />
-              <h2 className="text-lg font-bold uppercase tracking-wide text-foreground">{fornecedor}</h2>
-              <span className="text-xs font-semibold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full">
-                {listaItens.length} itens
-              </span>
+            <div className="bg-muted/50 p-3 border-b flex items-center justify-between group">
+              <div 
+                className="flex items-center gap-3 cursor-pointer flex-1"
+                onClick={() => toggleSupplier(fornecedor)}
+              >
+                {expandedSuppliers[fornecedor] !== false ? (
+                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                )}
+                <Factory className="h-5 w-5 text-indigo-500" />
+                <h2 className="text-lg font-bold uppercase tracking-wide text-foreground">{fornecedor}</h2>
+                <span className="text-xs font-semibold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full">
+                  {listaItens.length} itens
+                </span>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 gap-2 print:hidden"
+                onClick={() => window.print()}
+                title={`Imprimir pauta de ${fornecedor}`}
+              >
+                <Printer className="h-4 w-4" />
+                Imprimir Pauta
+              </Button>
             </div>
             
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-muted/20 text-muted-foreground uppercase text-xs">
-                  <tr>
-                    <th className="p-3 w-16">Item</th>
-                    <th className="p-3">Item / Cliente</th>
-                    <th className="p-3 w-24">Qtd</th>
-                    <th className="p-3 w-56">Status (PCP)</th>
-                    <th className="p-3 w-48">Previsão Entrega</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {listaItens.map((item: any) => (
-                    <tr key={item.item_id} className="hover:bg-muted/30 transition-colors">
-                      <td className="p-3 font-black text-slate-500 align-top">
-                        #{item.item_numero}
-                      </td>
-                      <td className="p-3 align-top">
-                        <div className="font-bold text-foreground">{item.item_descricao}</div>
-                        <div className="text-xs text-muted-foreground mt-1">Pedido #{item.pedido_numero} • {item.cliente_nome}</div>
-                      </td>
-                      <td className="p-3 font-semibold align-top">{item.quantidade || 0}</td>
-                      <td className="p-3 align-top">
-                        <Select
-                          value={item.item_status || "ABERTO"}
-                          onValueChange={(v) => handleStatusChange(item.item_id, v)}
-                        >
-                          <SelectTrigger className="h-8 text-[10px] font-bold uppercase bg-background border-input text-foreground">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                              <SelectItem value="ABERTO">00 - Aberto</SelectItem>
-                              <SelectItem value="AGUARDANDO_PROVA">01 - Ag. Prova</SelectItem>
-                              <SelectItem value="EM_PROVA_FISICA">02.1 - Prova Física</SelectItem>
-                              <SelectItem value="EM_PROVA_VIRTUAL">02.2 - Prova Virtual</SelectItem>
-                              <SelectItem value="AGUARDANDO_TROCA_ARQUIVO">03 - Ag. Troca Arquivo</SelectItem>
-                              <SelectItem value="PRODUCAO_LIBERADA">04 - Prod. Liberada</SelectItem>
-                              <SelectItem value="EM_IMPRESSAO">05 - Em Impressão</SelectItem>
-                              <SelectItem value="CAPA_IMPRESSA_FALTA_MIOLO">05.1 - Capa Impressa</SelectItem>
-                              <SelectItem value="MIOLO_IMPRESSO_FALTA_CAPA">05.2 - Miolo Impresso</SelectItem>
-                              <SelectItem value="EM_ACABAMENTO_INTERNO">06 - Em Acabamento</SelectItem>
-                              <SelectItem value="EM_TERCEIRO">07 - Em Terceiro</SelectItem>
-                              <SelectItem value="FINALIZADO_AG_EXPEDICAO">08 - Ag. Expedição</SelectItem>
-                              <SelectItem value="EM_TRANSPORTE">09 - Em Transporte</SelectItem>
-                              {/* Não listar Entregue ou Cancelado aqui, pois a view já ignora */}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td className="p-3 align-top">
-                        <div className="flex items-center gap-2">
-                          <Input 
-                            type="date" 
-                            className="h-8 text-xs font-medium"
-                            value={item.data_entrega_efetiva ? item.data_entrega_efetiva.split('T')[0] : ""}
-                            onChange={(e) => handleDateChange(item.item_id, e.target.value)}
-                          />
-                        </div>
-                      </td>
+            {expandedSuppliers[fornecedor] !== false && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-muted/20 text-muted-foreground uppercase text-xs">
+                    <tr>
+                      <th className="p-3 w-16">Item</th>
+                      <th className="p-3">Material</th>
+                      <th className="p-3 w-24">Pedido</th>
+                      <th className="p-3">Cliente</th>
+                      <th className="p-3 w-24">Qtd</th>
+                      <th className="p-3 w-48">Status</th>
+                      <th className="p-3 w-40">Previsão</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {listaItens.map((item: any) => (
+                      <tr key={item.item_id} className="hover:bg-muted/30 transition-colors">
+                        <td className="p-3 font-black text-slate-500 align-top">
+                          #{item.item_numero}
+                        </td>
+                        <td className="p-3 align-top font-bold text-foreground">
+                          {item.item_descricao}
+                        </td>
+                        <td className="p-3 align-top text-muted-foreground">
+                          #{item.pedido_numero}
+                        </td>
+                        <td className="p-3 align-top font-semibold">
+                          {item.cliente_nome}
+                        </td>
+                        <td className="p-3 font-semibold align-top">{item.quantidade || 0}</td>
+                        <td className="p-3 align-top">
+                          <div className="print:hidden">
+                            <Select
+                              value={item.item_status || "ABERTO"}
+                              onValueChange={(v) => handleStatusChange(item.item_id, v)}
+                            >
+                              <SelectTrigger className="h-8 text-[10px] font-bold uppercase bg-background border-input text-foreground">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  <SelectItem value="ABERTO">00 - Aberto</SelectItem>
+                                  <SelectItem value="AGUARDANDO_PROVA">01 - Ag. Prova</SelectItem>
+                                  <SelectItem value="EM_PROVA_FISICA">02.1 - Prova Física</SelectItem>
+                                  <SelectItem value="EM_PROVA_VIRTUAL">02.2 - Prova Virtual</SelectItem>
+                                  <SelectItem value="AGUARDANDO_TROCA_ARQUIVO">03 - Ag. Troca Arquivo</SelectItem>
+                                  <SelectItem value="PRODUCAO_LIBERADA">04 - Prod. Liberada</SelectItem>
+                                  <SelectItem value="EM_IMPRESSAO">05 - Em Impressão</SelectItem>
+                                  <SelectItem value="CAPA_IMPRESSA_FALTA_MIOLO">05.1 - Capa Impressa</SelectItem>
+                                  <SelectItem value="MIOLO_IMPRESSO_FALTA_CAPA">05.2 - Miolo Impresso</SelectItem>
+                                  <SelectItem value="EM_ACABAMENTO_INTERNO">06 - Em Acabamento</SelectItem>
+                                  <SelectItem value="EM_TERCEIRO">07 - Em Terceiro</SelectItem>
+                                  <SelectItem value="FINALIZADO_AG_EXPEDICAO">08 - Ag. Expedição</SelectItem>
+                                  <SelectItem value="EM_TRANSPORTE">09 - Em Transporte</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <span className="hidden print:inline font-bold uppercase text-[10px]">{item.item_status?.replace(/_/g, " ") || "ABERTO"}</span>
+                        </td>
+                        <td className="p-3 align-top">
+                          <div className="flex items-center gap-2">
+                            <Input 
+                              type="date" 
+                              className="h-8 text-xs font-medium print:hidden"
+                              value={item.data_entrega_efetiva ? item.data_entrega_efetiva.split('T')[0] : ""}
+                              onChange={(e) => handleDateChange(item.item_id, e.target.value)}
+                            />
+                            <span className="hidden print:inline text-xs">{formatDate(item.data_entrega_efetiva)}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         ))}
         {(!itens || itens.length === 0) && (
