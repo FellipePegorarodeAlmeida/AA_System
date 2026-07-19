@@ -1,11 +1,11 @@
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useItensPcp, useUpdateItemPcp } from "@/hooks/use-pcp";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Factory, CalendarClock, ChevronDown, ChevronRight, Printer, Download } from "lucide-react";
+import { Factory, CalendarClock, ChevronDown, ChevronRight, Printer, Download, ExternalLink } from "lucide-react";
 
 export default function PcpPage() {
   const navigate = useNavigate();
@@ -161,8 +161,15 @@ export default function PcpPage() {
                         <td className="p-3 align-top font-bold text-foreground">
                           {item.item_descricao}
                         </td>
-                        <td className="p-3 align-top text-muted-foreground">
-                          #{item.pedido_numero}
+                        <td className="p-3 align-top">
+                          <Link 
+                            to={`/pedidos/${item.pedido_id}`} 
+                            className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 hover:underline font-semibold transition-colors"
+                            title="Abrir detalhes do pedido"
+                          >
+                            #{item.pedido_numero}
+                            <ExternalLink className="h-3 w-3" />
+                          </Link>
                         </td>
                         <td className="p-3 align-top font-semibold">
                           {item.cliente_nome}
