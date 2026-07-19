@@ -4,7 +4,7 @@ import { useItensPcp, useUpdateItemPcp } from "@/hooks/use-pcp";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Factory, CalendarClock, ChevronDown, ChevronRight, Printer } from "lucide-react";
+import { Factory, CalendarClock, ChevronDown, ChevronRight, Printer, Download } from "lucide-react";
 
 export default function PcpPage() {
   const { data: itens, isLoading } = useItensPcp();
@@ -22,6 +22,39 @@ export default function PcpPage() {
   }, [itens]);
 
   const [expandedSuppliers, setExpandedSuppliers] = useState<Record<string, boolean>>({});
+  const [printTarget, setPrintTarget] = useState<'ALL' | string | null>(null);
+
+  const handlePrint = (target: 'ALL' | string) => {
+    setPrintTarget(target);
+    setTimeout(() => {
+      window.print();
+      setPrintTarget(null);
+    }, 150);
+  };
+
+  const handleExportCSV = (dados: any[], nomeArquivo: string) => {
+    const cabecalho = ["Item", "Material", "Pedido", "Cliente", "Fornecedor", "Qtd", "Status", "Previsao"];
+    const linhas = dados.map(i => [
+      i.item_numero,
+      `"${i.item_descricao || ''}"`,
+      i.pedido_numero,
+      `"${i.cliente_nome || ''}"`,
+      `"${i.fornecedor_nome || ''}"`,
+      i.quantidade || 0,
+      i.item_status,
+      i.data_entrega_efetiva ? i.data_entrega_efetiva.split('T')[0] : ""
+    ]);
+    
+    const csvContent = [cabecalho.join(";"), ...linhas.map(l => l.join(";"))].join("\n");
+    const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${nomeArquivo}_${new Date().getTime()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const toggleSupplier = (fornecedor: string) => {
     setExpandedSuppliers(prev => ({
@@ -48,14 +81,31 @@ export default function PcpPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader 
-        title="PCP / Produção" 
-        description="Controle de itens em linha de produção agrupados por fornecedor." 
-      />
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
+        <PageHeader 
+          title="PCP / Produção" 
+          description="Controle de itens em linha de produção agrupados por fornecedor." 
+        />
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => handleExportCSV(itens || [], "PCP_Global")} className="gap-2">
+            <Download className="h-4 w-4" />
+            Exportar CSV Geral
+          </Button>
+          <Button variant="default" onClick={() => handlePrint('ALL')} className="gap-2">
+            <Printer className="h-4 w-4" />
+            Imprimir Relatório Geral
+          </Button>
+        </div>
+      </div>
 
       <div className="space-y-8">
         {Object.entries(itensAgrupados).map(([fornecedor, listaItens]: [string, any]) => (
-          <div key={fornecedor} className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+          <div 
+            key={fornecedor} 
+            className={`bg-card border border-border rounded-lg shadow-sm overflow-hidden ${
+              printTarget && printTarget !== 'ALL' && printTarget !== fornecedor ? 'hidden print:hidden' : ''
+            }`}
+          >
             <div className="bg-muted/50 p-3 border-b flex items-center justify-between group">
               <div 
                 className="flex items-center gap-3 cursor-pointer flex-1"
@@ -72,16 +122,28 @@ export default function PcpPage() {
                   {listaItens.length} itens
                 </span>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-8 gap-2 print:hidden"
-                onClick={() => window.print()}
-                title={`Imprimir pauta de ${fornecedor}`}
-              >
-                <Printer className="h-4 w-4" />
-                Imprimir Pauta
-              </Button>
+              <div className="flex gap-2 print:hidden">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 gap-2 text-muted-foreground hover:text-foreground"
+                  onClick={() => handleExportCSV(listaItens, `PCP_${fornecedor.replace(/\s+/g, '_')}`)}
+                  title={`Baixar CSV de ${fornecedor}`}
+                >
+                  <Download className="h-4 w-4" />
+                  CSV
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 gap-2"
+                  onClick={() => handlePrint(fornecedor)}
+                  title={`Imprimir pauta de ${fornecedor}`}
+                >
+                  <Printer className="h-4 w-4" />
+                  Imprimir Pauta
+                </Button>
+              </div>
             </div>
             
             {expandedSuppliers[fornecedor] !== false && (
@@ -167,6 +229,9 @@ export default function PcpPage() {
             <p>Nenhum item em produção no momento.</p>
           </div>
         )}
+      </div>
+      <div className="hidden print:block fixed bottom-0 left-0 w-full text-center text-[10px] text-gray-500 pt-4 border-t border-gray-300">
+        Relatório de PCP gerado em: {new Date().toLocaleString("pt-BR")}
       </div>
     </div>
   );
