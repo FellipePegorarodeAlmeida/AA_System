@@ -257,13 +257,16 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
       if (it.id !== id) return it;
       const novo = { ...it, [field]: value };
       
-      if (field === "fornecedor_valor_total") {
-        const custoForn = Number(value) || 0;
-
-        novo.fornecedor_valor_total = custoForn;
-      } else if (field === "total" || field === "quantidade") {
-        const qtd = Number(novo.quantidade) || 1;
-        novo.preco_unitario = (Number(novo.total) || 0) / qtd;
+      if (field === "fornecedor_valor_unitario" || field === "quantidade") {
+        const qtd = field === "quantidade" ? Number(value) : (Number(novo.quantidade) || 1);
+        const custoUnit = field === "fornecedor_valor_unitario" ? Number(value) : (Number(novo.fornecedor_valor_unitario) || 0);
+        novo.fornecedor_valor_unitario = custoUnit;
+        novo.fornecedor_valor_total = custoUnit * qtd;
+      } else if (field === "preco_unitario" || field === "quantidade") {
+        const qtd = field === "quantidade" ? Number(value) : (Number(novo.quantidade) || 1);
+        const precoUnit = field === "preco_unitario" ? Number(value) : (Number(novo.preco_unitario) || 0);
+        novo.preco_unitario = precoUnit;
+        novo.total = precoUnit * qtd;
       }
       return novo;
     }));
@@ -272,13 +275,16 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
     const updatePayload: any = { [field]: value };
     const itemAtual = itens.find(i => i.id === id);
     
-    if (field === "fornecedor_valor_total") {
-      const custoForn = Number(value) || 0;
-      updatePayload.fornecedor_valor_total = custoForn;
-    } else if (field === "total" || field === "quantidade") {
+    if (field === "fornecedor_valor_unitario" || field === "quantidade") {
       const qtd = field === "quantidade" ? Number(value) : (Number(itemAtual?.quantidade) || 1);
-      const tot = field === "total" ? Number(value) : (Number(itemAtual?.total) || 0);
-      updatePayload.preco_unitario = tot / (qtd === 0 ? 1 : qtd);
+      const custoUnit = field === "fornecedor_valor_unitario" ? Number(value) : (Number(itemAtual?.fornecedor_valor_unitario) || 0);
+      updatePayload.fornecedor_valor_unitario = custoUnit;
+      updatePayload.fornecedor_valor_total = custoUnit * qtd;
+    } else if (field === "preco_unitario" || field === "quantidade") {
+      const qtd = field === "quantidade" ? Number(value) : (Number(itemAtual?.quantidade) || 1);
+      const precoUnit = field === "preco_unitario" ? Number(value) : (Number(itemAtual?.preco_unitario) || 0);
+      updatePayload.preco_unitario = precoUnit;
+      updatePayload.total = precoUnit * qtd;
     }
 
     await supabase.from("orcamento_itens").update(updatePayload).eq("id", id);
@@ -1036,8 +1042,10 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                                 <tr>
                                   <th className="px-3 py-2 w-[30%]">Nome do Modelo / SKU</th>
                                   <th className="px-3 py-2 w-20">Qtd</th>
-                                  <th className="px-3 py-2 w-32">Custo Forn (R$)</th>
-                                  <th className="px-3 py-2 w-32">Venda Total (R$)</th>
+                                  <th className="px-3 py-2 w-32">Custo Unit. (R$)</th>
+                                  <th className="px-3 py-2 w-32">Custo Total</th>
+                                  <th className="px-3 py-2 w-32">Venda Unit. (R$)</th>
+                                  <th className="px-3 py-2 w-32">Venda Total</th>
                                   <th className="px-3 py-2">% Com. Total</th>
                                   {temAgente && <th className="px-3 py-2">% Comissão AA</th>}
                                   <th className="px-3 py-2 text-center w-10">Ações</th>
@@ -1055,12 +1063,22 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                                       </div>
                                     </td>
                                     <td className="p-2">
-                                      <Input type="number" className="h-8 bg-muted" value={linha.fornecedor_valor_total || 0} onChange={e => updateItemBD(linha.id, "fornecedor_valor_total", Number(e.target.value))} disabled={isLocked} />
+                                      <Input type="number" step="0.0001" className="h-8 font-medium border-gray-300" value={linha.fornecedor_valor_unitario || ""} onChange={e => updateItemBD(linha.id, "fornecedor_valor_unitario", e.target.value)} disabled={isLocked} placeholder="0.0000" />
+                                    </td>
+                                    <td className="p-2">
+                                      <div className="h-8 flex items-center px-3 bg-muted/50 rounded-md border border-transparent text-sm font-semibold text-muted-foreground">
+                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(linha.fornecedor_valor_total || 0)}
+                                      </div>
                                     </td>
                                     <td className="p-2 align-top">
-                                      <Input type="number" className="h-8 font-bold border-blue-200 focus-visible:ring-blue-500" value={linha.total || 0} onChange={e => updateItemBD(linha.id, "total", Number(e.target.value))} disabled={isLocked} />
+                                      <Input type="number" step="0.0001" className="h-8 font-bold border-blue-300 focus-visible:ring-blue-500" value={linha.preco_unitario || ""} onChange={e => updateItemBD(linha.id, "preco_unitario", e.target.value)} disabled={isLocked} placeholder="0.0000" />
+                                    </td>
+                                    <td className="p-2 align-top">
+                                      <div className="h-8 flex items-center px-3 bg-muted/50 rounded-md border border-transparent text-sm font-bold text-foreground">
+                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(linha.total || 0)}
+                                      </div>
                                       {linha.fornecedor_valor_total > 0 && linha.total < linha.fornecedor_valor_total && (
-                                        <div className="flex items-center gap-1 mt-1 text-red-500" title="Valor de venda está abaixo do custo do fornecedor!">
+                                        <div className="flex items-center gap-1 mt-1 text-red-500" title="Valor de venda está abaixo do custo!">
                                           <AlertCircle className="w-3 h-3" />
                                           <span className="text-[10px] font-bold uppercase leading-tight">Abaixo do Custo!</span>
                                         </div>
@@ -1211,9 +1229,24 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                                   return (
                                     <td key={fornId} className={`p-4 border-r border-border align-top transition-colors ${conc.is_vencedor ? 'bg-emerald-500/10' : 'bg-card'}`}>
                                       <div className="space-y-3">
-                                        <div>
-                                          <Label className="text-[10px] text-muted-foreground uppercase font-bold">Custo Total (R$)</Label>
-                                          <Input type="number" className="h-8 font-semibold bg-background border-input" value={conc.valor_total_custo || ""} onChange={e => updateConcorrenciaBD(item.id, fornId, 'valor_total_custo', e.target.value)} disabled={isLocked} placeholder="0.00" />
+                                        <div className="grid gap-1">
+                                          <Label className="text-[10px] text-muted-foreground uppercase font-bold">Custo Unitário (R$)</Label>
+                                          <Input type="number" step="0.0001" className="h-8 font-semibold bg-background border-input" 
+                                            value={conc.valor_unitario_custo !== undefined ? conc.valor_unitario_custo : ((conc.valor_total_custo || 0) / (item.quantidade || 1))} 
+                                            onChange={e => {
+                                              const vUnit = e.target.value === "" ? "" : Number(e.target.value);
+                                              updateConcorrenciaBD(item.id, fornId, 'valor_unitario_custo', vUnit);
+                                              if (vUnit !== "") {
+                                                 updateConcorrenciaBD(item.id, fornId, 'valor_total_custo', vUnit * (item.quantidade || 1));
+                                              } else {
+                                                 updateConcorrenciaBD(item.id, fornId, 'valor_total_custo', 0);
+                                              }
+                                            }} 
+                                            disabled={isLocked} placeholder="0.0000" 
+                                          />
+                                          <div className="text-[10px] font-bold text-foreground text-right">
+                                            Total: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(conc.valor_total_custo || 0)}
+                                          </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-2">
                                           <div>
@@ -1237,8 +1270,9 @@ export function OrcamentoFormModal({ open, onOpenChange, editing, onSuccess }: a
                                             const comissForn = Number(conc.comissao_valor) || 0;
                                             const propNum = conc.numero_proposta_fornecedor || "";
                                             if(custoForn > 0) {
-                                              updateItemBD(item.id, "fornecedor_valor_total", custoForn);
-                                              updateItemBD(item.id, "total", custoForn);
+                                              updateItemBD(item.id, "fornecedor_valor_unitario", (custoForn / (item.quantidade || 1)));
+                                              updateItemBD(item.id, "preco_unitario", (custoForn / (item.quantidade || 1)));
+                                              // O total será recalculado automaticamente pelas funções do banco.
                                               
                                               // A comissão inserida já é percentual
                                               updateItemBD(item.id, "comissao_lfa_percentual", comissForn);
