@@ -160,8 +160,15 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
                     disabled={disabled} 
                     value={capa.tipo_capa || (capa.capa_dura ? "Capa Dura" : "Comum")} 
                     onValueChange={(val) => {
-                      updateCapa("tipo_capa", val);
-                      updateCapa("capa_dura", val === "Capa Dura"); // Mantém a retrocompatibilidade da flag
+                      // Dispara as duas atualizações em um único objeto para evitar sobrescrita de estado no React
+                      onChange({
+                        ...value,
+                        capa: {
+                          ...(value.capa || {}),
+                          tipo_capa: val,
+                          capa_dura: val === "Capa Dura"
+                        }
+                      });
                     }}
                   >
                     <SelectTrigger className="h-8 bg-card text-sm w-[140px]">
