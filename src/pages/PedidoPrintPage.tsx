@@ -54,8 +54,13 @@ const buildSpecsString = (item: any) => {
     const pantoneCapa = s.capa.usa_pantone && s.capa.pantone_cor ? ` + Pantone ${s.capa.pantone_cor}` : '';
     capaParts.push(`${coresCapa}${pantoneCapa}`);
     
-    if (s.capa.capa_dura) {
-      capaParts.push(`Capa Dura (${s.capa.espessura_papelao})`);
+    if (s.capa.tipo_capa === 'Capa Dura' || (!s.capa.tipo_capa && s.capa.capa_dura)) {
+      capaParts.push(`Capa Dura (${s.capa.espessura_papelao || 's/ espessura'})`);
+    } else if (s.capa.tipo_capa === 'Capa Flexível') {
+      capaParts.push(`Capa Flexível`);
+      if (s.capa.guarda_papel || s.capa.guarda_cores) {
+        capaParts.push(`Guarda: ${s.capa.guarda_papel || 's/ info'} (${s.capa.guarda_cores || 's/ cor'})`);
+      }
     }
     
     const acabsCapa = [];

@@ -608,6 +608,7 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
                     <SelectItem value="Encadernação Costurada + colada">Encadernação Costurada + colada</SelectItem>
                     <SelectItem value="Espiral">Espiral</SelectItem>
                     <SelectItem value="Wire-O">Wire-O</SelectItem>
+                    <SelectItem value="Grampo">Grampo</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
