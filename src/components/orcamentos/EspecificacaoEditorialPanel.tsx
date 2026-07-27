@@ -156,24 +156,50 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
                   />
                 )}
                 <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="capa_dura"
-                    disabled={disabled}
-                    checked={!!capa.capa_dura}
-                    onCheckedChange={(checked) => updateCapa("capa_dura", checked)}
-                  />
-                  <Label htmlFor="capa_dura" className="text-xs font-medium leading-none cursor-pointer">
-                    Capa Dura?
-                  </Label>
+                  <Select 
+                    disabled={disabled} 
+                    value={capa.tipo_capa || (capa.capa_dura ? "Capa Dura" : "Comum")} 
+                    onValueChange={(val) => {
+                      updateCapa("tipo_capa", val);
+                      updateCapa("capa_dura", val === "Capa Dura"); // Mantém a retrocompatibilidade da flag
+                    }}
+                  >
+                    <SelectTrigger className="h-8 bg-card text-sm w-[140px]">
+                      <SelectValue placeholder="Estrutura..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Comum">Capa Comum</SelectItem>
+                      <SelectItem value="Capa Dura">Capa Dura</SelectItem>
+                      <SelectItem value="Capa Flexível">Capa Flexível</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                {capa.capa_dura && (
+                {(capa.tipo_capa === "Capa Dura" || (!capa.tipo_capa && capa.capa_dura)) && (
                   <Input
                     disabled={disabled}
-                    className="h-8 bg-card text-sm w-[120px]"
+                    className="h-8 bg-card text-sm w-[140px]"
                     placeholder="Espessura Papelão"
                     value={capa.espessura_papelao || ""}
                     onChange={(e) => updateCapa("espessura_papelao", e.target.value)}
                   />
+                )}
+                {capa.tipo_capa === "Capa Flexível" && (
+                  <>
+                    <Input
+                      disabled={disabled}
+                      className="h-8 bg-card text-sm w-[150px]"
+                      placeholder="Papel da Guarda"
+                      value={capa.guarda_papel || ""}
+                      onChange={(e) => updateCapa("guarda_papel", e.target.value)}
+                    />
+                    <Input
+                      disabled={disabled}
+                      className="h-8 bg-card text-sm w-[120px]"
+                      placeholder="Cores Guarda (Ex: 4x4)"
+                      value={capa.guarda_cores || ""}
+                      onChange={(e) => updateCapa("guarda_cores", e.target.value)}
+                    />
+                  </>
                 )}
               </div>
             </div>
