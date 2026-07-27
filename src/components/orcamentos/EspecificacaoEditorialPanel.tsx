@@ -464,7 +464,7 @@ export function EspecificacaoEditorialPanel({ value, onChange, disabled }: Espec
                           <SelectItem value="63g/m²">63g/m²</SelectItem>
                           <SelectItem value="65g/m²">65g/m²</SelectItem>
                           <SelectItem value="70g/m²">70g/m²</SelectItem>
-                          <SelectItem value="75g/m²">70g/m²</SelectItem>
+                          <SelectItem value="75g/m²">75g/m²</SelectItem>
                           <SelectItem value="80g/m²">80g/m²</SelectItem>
                           <SelectItem value="90g/m²">90g/m²</SelectItem>
                           <SelectItem value="115g/m²">115g/m²</SelectItem>
